@@ -264,7 +264,7 @@ void ChatManager::exportConversation(const QString &path) {
     for (const auto &msg : messages) {
         out << "## " << msg.role.toUpper() << "\n\n";
         if (!msg.thinkingContent.isEmpty())
-            out << "> **Thinking:**\n> " << msg.thinkingContent.replace("\n", "\n> ") << "\n\n";
+            out << "> **Thinking:**\n> " << QString(msg.thinkingContent).replace("\n", "\n> ") << "\n\n";
         out << msg.content << "\n\n---\n\n";
     }
 }

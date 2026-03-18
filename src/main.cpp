@@ -34,7 +34,8 @@ int main(int argc, char *argv[]) {
     // Expose to QML
     engine.rootContext()->setContextProperty("chatManager", &chatManager);
 
-    const QUrl url(u"qrc:/QChat/src/qml/Main.qml"_qs);
+    using namespace Qt::StringLiterals;
+    const QUrl url(u"qrc:/QChat/src/qml/Main.qml"_s);
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreationFailed,
