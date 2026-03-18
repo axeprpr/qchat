@@ -106,15 +106,54 @@ echo Deploying Qt dependencies...
 set DEPLOY_DIR=%BUILD_DIR%\deploy
 
 if not exist %DEPLOY_DIR% mkdir %DEPLOY_DIR%
-copy %BUILD_DIR%\QChat.exe %DEPLOY_DIR%\ >nul 2>&1
-copy %BUILD_DIR%\%BUILD_TYPE%\QChat.exe %DEPLOY_DIR%\ >nul 2>&1
 
-"%QT_DIR%\bin\windeployqt.exe" --qmldir src\qml %DEPLOY_DIR%\QChat.exe
+REM Find the built exe (Ninja puts it directly in build dir, MSVC in Release/ subfolder)
+set EXE_PATH=
+if exist "%BUILD_DIR%\QChat.exe" set EXE_PATH=%BUILD_DIR%\QChat.exe
+if exist "%BUILD_DIR%\%BUILD_TYPE%\QChat.exe" set EXE_PATH=%BUILD_DIR%\%BUILD_TYPE%\QChat.exe
+
+if "%EXE_PATH%"=="" (
+    echo [ERROR] QChat.exe not found in build directory.
+    popd
+    exit /b 1
+)
+
+echo Found executable: %EXE_PATH%
+copy "%EXE_PATH%" "%DEPLOY_DIR%\" >nul
+
+REM Use windeployqt6 to copy all required Qt DLLs, QML modules, and plugins
+echo Running windeployqt...
+"%QT_DIR%\bin\windeployqt.exe" --qmldir src\qml --no-translations "%DEPLOY_DIR%\QChat.exe"
+
+if errorlevel 1 (
+    echo [WARNING] windeployqt failed. Trying to copy DLLs manually...
+    copy "%QT_DIR%\bin\Qt6Core.dll" "%DEPLOY_DIR%\" >nul 2>&1
+    copy "%QT_DIR%\bin\Qt6Gui.dll" "%DEPLOY_DIR%\" >nul 2>&1
+    copy "%QT_DIR%\bin\Qt6Quick.dll" "%DEPLOY_DIR%\" >nul 2>&1
+    copy "%QT_DIR%\bin\Qt6QuickControls2.dll" "%DEPLOY_DIR%\" >nul 2>&1
+    copy "%QT_DIR%\bin\Qt6Network.dll" "%DEPLOY_DIR%\" >nul 2>&1
+    copy "%QT_DIR%\bin\Qt6Svg.dll" "%DEPLOY_DIR%\" >nul 2>&1
+    copy "%QT_DIR%\bin\Qt6Widgets.dll" "%DEPLOY_DIR%\" >nul 2>&1
+    copy "%QT_DIR%\bin\Qt6Qml.dll" "%DEPLOY_DIR%\" >nul 2>&1
+    copy "%QT_DIR%\bin\Qt6QmlModels.dll" "%DEPLOY_DIR%\" >nul 2>&1
+    copy "%QT_DIR%\bin\Qt6OpenGL.dll" "%DEPLOY_DIR%\" >nul 2>&1
+    copy "%QT_DIR%\bin\Qt6PrintSupport.dll" "%DEPLOY_DIR%\" >nul 2>&1
+    copy "%QT_DIR%\bin\Qt6QmlWorkerScript.dll" "%DEPLOY_DIR%\" >nul 2>&1
+
+    REM Copy MinGW runtime DLLs
+    for %%f in (libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll) do (
+        where %%f >nul 2>&1 && copy "%%~$PATH:f" "%DEPLOY_DIR%\" >nul 2>&1
+    )
+)
 
 echo.
 echo ============================================
 echo    Build complete!
 echo    Output: %DEPLOY_DIR%\QChat.exe
+echo.
+echo    Run it directly from the deploy folder:
+echo      cd %DEPLOY_DIR%
+echo      QChat.exe
 echo ============================================
 echo.
 
