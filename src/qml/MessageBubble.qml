@@ -81,7 +81,7 @@ Item {
                       (messageContent.length > 0 ? chatManager.markdown.toHtml(messageContent) :
                        (isStreaming ? "<span style='color:#888;'>Thinking...</span>" : ""))
                 textFormat: isUser ? Text.PlainText : Text.RichText
-                color: isUser ? theme.onPrimary : (isError ? theme.danger : theme.text)
+                color: isUser ? theme.primaryText : (isError ? theme.danger : theme.text)
                 font.pixelSize: theme.fontSizeBase
                 wrapMode: Text.Wrap
                 lineHeight: 1.5

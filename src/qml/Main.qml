@@ -24,7 +24,7 @@ ApplicationWindow {
         property color surfaceVariant: isDark ? "#1a2744" : "#f0f0f0"
         property color primary: "#4361ee"
         property color primaryHover: "#3a56d4"
-        property color onPrimary: "#ffffff"
+        property color primaryText: "#ffffff"
         property color text: isDark ? "#e6e6e6" : "#1a1a1a"
         property color textSecondary: isDark ? "#a0a0b0" : "#666666"
         property color border: isDark ? "#2a3a5c" : "#e0e0e0"
@@ -165,7 +165,6 @@ ApplicationWindow {
                         color: chatManager.settings.enableThinking ? theme.primary : theme.surfaceVariant
                         border.color: chatManager.settings.enableThinking ? theme.primary : theme.border
                         border.width: 1
-                        cursor: Qt.PointingHandCursor
 
                         RowLayout {
                             id: thinkRow
@@ -178,7 +177,7 @@ ApplicationWindow {
                             }
                             Text {
                                 text: "Deep Think"
-                                color: chatManager.settings.enableThinking ? theme.onPrimary : theme.text
+                                color: chatManager.settings.enableThinking ? theme.primaryText : theme.text
                                 font.pixelSize: 12
                                 font.bold: chatManager.settings.enableThinking
                             }

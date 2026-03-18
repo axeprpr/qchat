@@ -32,7 +32,7 @@ Rectangle {
 
                 Text {
                     text: "New Chat"
-                    color: theme.onPrimary
+                    color: theme.primaryText
                     font.pixelSize: 14
                     font.bold: true
                 }
