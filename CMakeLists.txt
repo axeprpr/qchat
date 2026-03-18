@@ -98,7 +98,20 @@ qt_add_executable(${PROJECT_NAME} ${CPP_SOURCES} ${RESOURCE_FILES})
 qt_add_qml_module(${PROJECT_NAME}
     URI QChat
     VERSION 1.0
-    QML_FILES ${QML_FILES}
+    QML_FILES
+        src/qml/Main.qml
+        src/qml/ChatView.qml
+        src/qml/Sidebar.qml
+        src/qml/MessageBubble.qml
+        src/qml/SettingsDialog.qml
+        src/qml/WelcomeView.qml
+        src/qml/ThinkingBlock.qml
+        src/qml/DocumentChip.qml
+        src/qml/ProviderConfig.qml
+    QML_FILES
+        src/qml/components/IconButton.qml
+        src/qml/components/Tag.qml
+    RESOURCE_PREFIX /qt/qml
 )
 
 # ============================================================================
@@ -143,8 +156,10 @@ install(SCRIPT ${deploy_script})
 # Platform-specific
 # ============================================================================
 if(WIN32)
+    # Temporarily show console window for debugging.
+    # Change to TRUE for release builds to hide console.
     set_target_properties(${PROJECT_NAME} PROPERTIES
-        WIN32_EXECUTABLE TRUE
+        WIN32_EXECUTABLE FALSE
     )
     # App icon
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/resources/app.rc")

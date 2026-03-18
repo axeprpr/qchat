@@ -1,14 +1,15 @@
-#include <QGuiApplication>
+#include <QApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickStyle>
 #include <QIcon>
 #include <QFont>
+#include <QDebug>
 
 #include "core/ChatManager.h"
 
 int main(int argc, char *argv[]) {
-    QGuiApplication app(argc, argv);
+    QApplication app(argc, argv);
     app.setApplicationName("QChat");
     app.setOrganizationName("QChat");
     app.setApplicationVersion("1.0.0");
@@ -21,11 +22,6 @@ int main(int argc, char *argv[]) {
     font.setStyleHint(QFont::SansSerif);
     app.setFont(font);
 
-    // Register types
-    qmlRegisterUncreatableType<MessageModel>("QChat.Core", 1, 0, "MessageModel", "Access via chatManager");
-    qmlRegisterUncreatableType<ConversationListModel>("QChat.Core", 1, 0, "ConversationListModel", "Access via chatManager");
-    qmlRegisterUncreatableType<SettingsManager>("QChat.Core", 1, 0, "SettingsManager", "Access via chatManager");
-
     // Create core manager
     ChatManager chatManager;
 
@@ -34,15 +30,13 @@ int main(int argc, char *argv[]) {
     // Expose to QML
     engine.rootContext()->setContextProperty("chatManager", &chatManager);
 
-    using namespace Qt::StringLiterals;
-    const QUrl url(u"qrc:/QChat/src/qml/Main.qml"_s);
-    QObject::connect(
-        &engine,
-        &QQmlApplicationEngine::objectCreationFailed,
-        &app,
-        []() { QCoreApplication::exit(-1); },
-        Qt::QueuedConnection);
-    engine.load(url);
+    // Load QML using module URI (Qt 6.5+ recommended way)
+    engine.loadFromModule("QChat", "Main");
+
+    if (engine.rootObjects().isEmpty()) {
+        qCritical() << "Failed to load QML. Check that QML files are properly compiled.";
+        return -1;
+    }
 
     return app.exec();
 }
