@@ -38,3 +38,6 @@ desktop.ini
 # Dependencies
 third_party/FluentUI/
 vcpkg_installed/
+
+# Claude Code
+.claude/
