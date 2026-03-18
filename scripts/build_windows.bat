@@ -6,6 +6,9 @@ REM ============================================================================
 
 setlocal enabledelayedexpansion
 
+REM ---- Navigate to project root (parent of scripts/) ----
+pushd "%~dp0.."
+
 echo.
 echo ============================================
 echo    QChat Build Script for Windows
@@ -41,10 +44,14 @@ if "%QT_DIR%"=="" (
     echo Please set QT_DIR manually, e.g.:
     echo   set QT_DIR=C:\Qt\6.7.2\msvc2022_64
     echo   %~nx0
+    popd
     exit /b 1
 )
 
 :found_qt
+
+REM ---- Add Qt tools to PATH ----
+set "PATH=%QT_DIR%\bin;%QT_DIR%\..\..\Tools\mingw1310_64\bin;%QT_DIR%\..\..\Tools\mingw1120_64\bin;%QT_DIR%\..\..\Tools\Ninja;%PATH%"
 
 REM ---- Check FluentUI ----
 if not exist "third_party\FluentUI\CMakeLists.txt" (
@@ -70,14 +77,16 @@ cmake -B %BUILD_DIR% -S . ^
 
 if errorlevel 1 (
     echo.
-    echo [NOTE] Ninja not found, trying Visual Studio generator...
+    echo [NOTE] Ninja not found, trying MinGW Makefiles...
     cmake -B %BUILD_DIR% -S . ^
         -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
-        -DCMAKE_PREFIX_PATH="%QT_DIR%"
+        -DCMAKE_PREFIX_PATH="%QT_DIR%" ^
+        -G "MinGW Makefiles"
 )
 
 if errorlevel 1 (
     echo [ERROR] CMake configuration failed.
+    popd
     exit /b 1
 )
 
@@ -85,6 +94,7 @@ cmake --build %BUILD_DIR% --config %BUILD_TYPE% --parallel
 
 if errorlevel 1 (
     echo [ERROR] Build failed.
+    popd
     exit /b 1
 )
 
@@ -106,4 +116,5 @@ echo    Output: %DEPLOY_DIR%\QChat.exe
 echo ============================================
 echo.
 
+popd
 endlocal
