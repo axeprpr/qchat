@@ -82,8 +82,8 @@ set(QML_FILES
     src/qml/ThinkingBlock.qml
     src/qml/DocumentChip.qml
     src/qml/ProviderConfig.qml
-    src/qml/components/IconButton.qml
-    src/qml/components/Tag.qml
+    src/qml/IconButton.qml
+    src/qml/Tag.qml
 )
 
 set(RESOURCE_FILES
@@ -108,9 +108,8 @@ qt_add_qml_module(${PROJECT_NAME}
         src/qml/ThinkingBlock.qml
         src/qml/DocumentChip.qml
         src/qml/ProviderConfig.qml
-    QML_FILES
-        src/qml/components/IconButton.qml
-        src/qml/components/Tag.qml
+        src/qml/IconButton.qml
+        src/qml/Tag.qml
     RESOURCE_PREFIX /qt/qml
 )
 
