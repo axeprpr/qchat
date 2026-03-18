@@ -7,6 +7,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+# Suppress Qt QML policy warning
+if(COMMAND qt_policy)
+    qt_policy(SET QTP0004 OLD)
+endif()
+
 # ============================================================================
 # Qt6 Dependencies
 # ============================================================================
@@ -16,7 +21,8 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS
     QuickControls2
     Network
     Svg
-    LinguistTools
+    Widgets
+    PrintSupport
 )
 
 qt_standard_project_setup(REQUIRES 6.5)
@@ -27,6 +33,9 @@ qt_standard_project_setup(REQUIRES 6.5)
 # FluentUI is included as a subdirectory.
 # Clone it first: git clone https://github.com/zhuzichu520/FluentUI.git third_party/FluentUI
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/FluentUI/CMakeLists.txt")
+    # Disable FluentUI demo/example apps — we only need the library
+    set(FLUENTUI_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(FLUENTUI_BUILD_DEMO OFF CACHE BOOL "" FORCE)
     add_subdirectory(third_party/FluentUI)
     set(FLUENTUI_AVAILABLE ON)
     message(STATUS "FluentUI found and enabled")
@@ -101,6 +110,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::QuickControls2
     Qt6::Network
     Qt6::Svg
+    Qt6::Widgets
+    Qt6::PrintSupport
 )
 
 if(FLUENTUI_AVAILABLE)

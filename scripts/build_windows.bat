@@ -78,6 +78,8 @@ cmake -B %BUILD_DIR% -S . ^
 if errorlevel 1 (
     echo.
     echo [NOTE] Ninja not found, trying MinGW Makefiles...
+    if exist %BUILD_DIR% rmdir /s /q %BUILD_DIR%
+    mkdir %BUILD_DIR%
     cmake -B %BUILD_DIR% -S . ^
         -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
         -DCMAKE_PREFIX_PATH="%QT_DIR%" ^
