@@ -20,6 +20,13 @@ class SettingsManager : public QObject {
     Q_PROPERTY(QString currentProvider READ currentProvider WRITE setCurrentProvider NOTIFY currentProviderChanged)
     Q_PROPERTY(QString currentModel READ currentModel WRITE setCurrentModel NOTIFY currentModelChanged)
     Q_PROPERTY(QString dataPath READ dataPath CONSTANT)
+    // New settings
+    Q_PROPERTY(bool mathRenderer READ mathRenderer WRITE setMathRenderer NOTIFY mathRendererChanged)
+    Q_PROPERTY(bool mermaidEnabled READ mermaidEnabled WRITE setMermaidEnabled NOTIFY mermaidEnabledChanged)
+    Q_PROPERTY(int historyMessageCount READ historyMessageCount WRITE setHistoryMessageCount NOTIFY historyMessageCountChanged)
+    Q_PROPERTY(QString chatMode READ chatMode WRITE setChatMode NOTIFY chatModeChanged)
+    Q_PROPERTY(bool deepResearch READ deepResearch WRITE setDeepResearch NOTIFY deepResearchChanged)
+    Q_PROPERTY(bool markdownRendering READ markdownRendering WRITE setMarkdownRendering NOTIFY markdownRenderingChanged)
 
 public:
     explicit SettingsManager(QObject *parent = nullptr);
@@ -33,6 +40,20 @@ public:
     void setLanguage(const QString &lang);
     bool sendOnEnter() const;
     void setSendOnEnter(bool val);
+
+    // New settings
+    bool mathRenderer() const;
+    void setMathRenderer(bool val);
+    bool mermaidEnabled() const;
+    void setMermaidEnabled(bool val);
+    int historyMessageCount() const;
+    void setHistoryMessageCount(int count);
+    QString chatMode() const;
+    void setChatMode(const QString &mode);
+    bool deepResearch() const;
+    void setDeepResearch(bool val);
+    bool markdownRendering() const;
+    void setMarkdownRendering(bool val);
 
     // Chat Settings
     QString systemPrompt() const;
@@ -69,6 +90,12 @@ signals:
     void enableThinkingChanged();
     void currentProviderChanged();
     void currentModelChanged();
+    void mathRendererChanged();
+    void mermaidEnabledChanged();
+    void historyMessageCountChanged();
+    void chatModeChanged();
+    void deepResearchChanged();
+    void markdownRenderingChanged();
 
 private:
     QSettings m_settings;

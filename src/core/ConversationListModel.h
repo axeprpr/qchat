@@ -29,6 +29,13 @@ public:
         QString model;
         int messageCount = 0;
         QJsonArray messages;
+        // Per-conversation settings
+        QString provider;
+        QString systemPrompt;
+        double temperature = -1.0; // -1 means use global
+        QString parameters;
+        bool markdownEnabled = true;
+        bool historyToolEnabled = true;
     };
 
     explicit ConversationListModel(QObject *parent = nullptr);
@@ -45,6 +52,8 @@ public:
     Q_INVOKABLE void renameConversation(int index, const QString &title);
     Q_INVOKABLE void updateConversation(const QString &id, const QJsonArray &messages,
                                          const QString &lastMsg, const QString &model);
+    Q_INVOKABLE QJsonObject getConversationSettings(int index) const;
+    Q_INVOKABLE void updateConversationSettings(int index, const QJsonObject &settings);
 
     QJsonArray getMessages(const QString &id) const;
     void saveToFile(const QString &path);

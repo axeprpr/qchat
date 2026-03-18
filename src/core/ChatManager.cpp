@@ -320,3 +320,38 @@ void ChatManager::retryLastMessage() {
     // Then resend
     sendMessage(lastUserMsg, lastAttachments);
 }
+
+void ChatManager::setChatMode(const QString &mode) {
+    if (m_chatMode != mode) {
+        m_chatMode = mode;
+        emit chatModeChanged();
+    }
+}
+
+void ChatManager::setDeepResearch(bool val) {
+    if (m_deepResearch != val) {
+        m_deepResearch = val;
+        emit deepResearchChanged();
+    }
+}
+
+void ChatManager::addImageAttachment(const QString &path) {
+    if (!m_attachments.contains(path)) {
+        m_attachments.append(path);
+        emit attachmentsChanged();
+    }
+}
+
+void ChatManager::removeAttachment(int index) {
+    if (index >= 0 && index < m_attachments.count()) {
+        m_attachments.removeAt(index);
+        emit attachmentsChanged();
+    }
+}
+
+void ChatManager::clearAttachments() {
+    if (!m_attachments.isEmpty()) {
+        m_attachments.clear();
+        emit attachmentsChanged();
+    }
+}

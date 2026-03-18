@@ -1,87 +1,71 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import FluentUI
 
 Rectangle {
     id: root
     property string content: ""
     property bool isActive: false
 
-    radius: theme.radiusSmall
-    color: theme.thinkingBg
-    border.color: Qt.rgba(theme.primary.r, theme.primary.g, theme.primary.b, 0.3)
+    width: parent.width
+    height: expanded ? contentCol.implicitHeight + 16 : headerRow.implicitHeight + 16
+    radius: 6
+    color: FluTheme.dark ? "#1a2335" : "#f0f4ff"
+    border.color: FluTheme.dark ? "#2a3a5c" : "#c8d8ff"
     border.width: 1
-    height: thinkLayout.height + 20
-    visible: content.length > 0
+    clip: true
+
+    property bool expanded: false
+
+    Behavior on height {
+        NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+    }
 
     ColumnLayout {
-        id: thinkLayout
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.margins: 10
+        id: contentCol
+        anchors { left: parent.left; right: parent.right; top: parent.top; margins: 10 }
         spacing: 6
 
         RowLayout {
+            id: headerRow
+            Layout.fillWidth: true
             spacing: 6
 
-            Text {
-                text: "🧠"
-                font.pixelSize: 14
-            }
-
-            Text {
-                text: isActive ? "Thinking..." : "Thought process"
-                color: theme.primary
-                font.pixelSize: 12
-                font.bold: true
-            }
-
-            // Animated dots when active
-            Text {
-                text: "..."
-                color: theme.primary
-                font.pixelSize: 12
+            FluProgressRing {
+                width: 16; height: 16
                 visible: isActive
-
-                SequentialAnimation on opacity {
-                    running: isActive
-                    loops: Animation.Infinite
-                    NumberAnimation { to: 0.2; duration: 500 }
-                    NumberAnimation { to: 1.0; duration: 500 }
-                }
             }
 
-            Item { Layout.fillWidth: true }
-
-            // Collapse button
-            Text {
-                id: collapseBtn
-                property bool collapsed: !isActive
-                text: collapsed ? "▸ Show" : "▾ Hide"
-                color: theme.textSecondary
-                font.pixelSize: 11
+            FluIcon {
+                iconSource: FluentIcons.Processing
+                iconSize: 14
                 visible: !isActive
+                color: FluTheme.dark ? "#7090d0" : "#4060c0"
+            }
 
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: collapseBtn.collapsed = !collapseBtn.collapsed
-                }
+            FluText {
+                text: isActive ? "Thinking..." : "Thought process"
+                color: FluTheme.dark ? "#7090d0" : "#4060c0"
+                fontSize: FluTextStyle.Caption
+                Layout.fillWidth: true
+            }
+
+            FluIconButton {
+                iconSource: expanded ? FluentIcons.ChevronUp : FluentIcons.ChevronDown
+                iconSize: 12
+                visible: !isActive && content.length > 0
+                onClicked: expanded = !expanded
             }
         }
 
-        Text {
+        FluText {
             Layout.fillWidth: true
             text: content
-            color: theme.textSecondary
-            font.pixelSize: 12
-            font.italic: true
+            color: FluTheme.dark ? "#8090a8" : "#506080"
+            fontSize: FluTextStyle.Caption
             wrapMode: Text.Wrap
-            lineHeight: 1.4
-            visible: isActive || !collapseBtn.collapsed
-            maximumLineCount: isActive ? -1 : 50
-            elide: Text.ElideRight
+            visible: expanded && content.length > 0
         }
     }
 }

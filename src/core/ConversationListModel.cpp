@@ -114,6 +114,34 @@ void ConversationListModel::updateConversation(const QString &id, const QJsonArr
     }
 }
 
+QJsonObject ConversationListModel::getConversationSettings(int index) const {
+    if (index < 0 || index >= m_conversations.count()) return {};
+    const Conversation &conv = m_conversations[index];
+    QJsonObject obj;
+    obj["title"] = conv.title;
+    obj["provider"] = conv.provider;
+    obj["systemPrompt"] = conv.systemPrompt;
+    obj["temperature"] = conv.temperature;
+    obj["parameters"] = conv.parameters;
+    obj["markdownEnabled"] = conv.markdownEnabled;
+    obj["historyToolEnabled"] = conv.historyToolEnabled;
+    return obj;
+}
+
+void ConversationListModel::updateConversationSettings(int index, const QJsonObject &settings) {
+    if (index < 0 || index >= m_conversations.count()) return;
+    Conversation &conv = m_conversations[index];
+    if (settings.contains("title")) conv.title = settings["title"].toString();
+    if (settings.contains("provider")) conv.provider = settings["provider"].toString();
+    if (settings.contains("systemPrompt")) conv.systemPrompt = settings["systemPrompt"].toString();
+    if (settings.contains("temperature")) conv.temperature = settings["temperature"].toDouble();
+    if (settings.contains("parameters")) conv.parameters = settings["parameters"].toString();
+    if (settings.contains("markdownEnabled")) conv.markdownEnabled = settings["markdownEnabled"].toBool();
+    if (settings.contains("historyToolEnabled")) conv.historyToolEnabled = settings["historyToolEnabled"].toBool();
+    QModelIndex idx = this->index(index);
+    emit dataChanged(idx, idx);
+}
+
 QJsonArray ConversationListModel::getMessages(const QString &id) const {
     for (const auto &conv : m_conversations) {
         if (conv.id == id) return conv.messages;
@@ -131,6 +159,12 @@ void ConversationListModel::saveToFile(const QString &path) {
         obj["timestamp"] = conv.timestamp.toString(Qt::ISODate);
         obj["model"] = conv.model;
         obj["messages"] = conv.messages;
+        obj["provider"] = conv.provider;
+        obj["systemPrompt"] = conv.systemPrompt;
+        obj["temperature"] = conv.temperature;
+        obj["parameters"] = conv.parameters;
+        obj["markdownEnabled"] = conv.markdownEnabled;
+        obj["historyToolEnabled"] = conv.historyToolEnabled;
         arr.append(obj);
     }
 
@@ -159,6 +193,12 @@ void ConversationListModel::loadFromFile(const QString &path) {
         conv.model = obj["model"].toString();
         conv.messages = obj["messages"].toArray();
         conv.messageCount = conv.messages.count();
+        conv.provider = obj["provider"].toString();
+        conv.systemPrompt = obj["systemPrompt"].toString();
+        conv.temperature = obj.contains("temperature") ? obj["temperature"].toDouble() : -1.0;
+        conv.parameters = obj["parameters"].toString();
+        conv.markdownEnabled = obj.contains("markdownEnabled") ? obj["markdownEnabled"].toBool() : true;
+        conv.historyToolEnabled = obj.contains("historyToolEnabled") ? obj["historyToolEnabled"].toBool() : true;
         m_conversations.append(conv);
     }
     endResetModel();

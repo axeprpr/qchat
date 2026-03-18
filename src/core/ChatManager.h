@@ -21,6 +21,9 @@ class ChatManager : public QObject {
     Q_PROPERTY(ThinkingParser* thinkingParser READ thinkingParser CONSTANT)
     Q_PROPERTY(bool isGenerating READ isGenerating NOTIFY isGeneratingChanged)
     Q_PROPERTY(QString currentConversationId READ currentConversationId NOTIFY currentConversationIdChanged)
+    Q_PROPERTY(QString chatMode READ chatMode WRITE setChatMode NOTIFY chatModeChanged)
+    Q_PROPERTY(bool deepResearch READ deepResearch WRITE setDeepResearch NOTIFY deepResearchChanged)
+    Q_PROPERTY(QStringList attachments READ attachments NOTIFY attachmentsChanged)
 
 public:
     explicit ChatManager(QObject *parent = nullptr);
@@ -33,6 +36,11 @@ public:
     ThinkingParser* thinkingParser() const { return m_thinkingParser; }
     bool isGenerating() const { return m_isGenerating; }
     QString currentConversationId() const { return m_currentConversationId; }
+    QString chatMode() const { return m_chatMode; }
+    void setChatMode(const QString &mode);
+    bool deepResearch() const { return m_deepResearch; }
+    void setDeepResearch(bool val);
+    QStringList attachments() const { return m_attachments; }
 
     Q_INVOKABLE void sendMessage(const QString &content, const QStringList &attachments = {});
     Q_INVOKABLE void stopGeneration();
@@ -44,10 +52,16 @@ public:
     Q_INVOKABLE QStringList availableModels() const;
     Q_INVOKABLE void fetchRemoteModels();
     Q_INVOKABLE void retryLastMessage();
+    Q_INVOKABLE void addImageAttachment(const QString &path);
+    Q_INVOKABLE void removeAttachment(int index);
+    Q_INVOKABLE void clearAttachments();
 
 signals:
     void isGeneratingChanged();
     void currentConversationIdChanged();
+    void chatModeChanged();
+    void deepResearchChanged();
+    void attachmentsChanged();
     void error(const QString &message);
 
 private slots:
@@ -75,4 +89,7 @@ private:
     bool m_isGenerating = false;
     QString m_currentConversationId;
     QString m_dataFilePath;
+    QString m_chatMode = "quick";
+    bool m_deepResearch = false;
+    QStringList m_attachments;
 };

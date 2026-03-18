@@ -30,6 +30,36 @@ void SettingsManager::setSendOnEnter(bool val) {
     if (sendOnEnter() != val) { m_settings.setValue("sendOnEnter", val); emit sendOnEnterChanged(); }
 }
 
+bool SettingsManager::mathRenderer() const { return m_settings.value("mathRenderer", false).toBool(); }
+void SettingsManager::setMathRenderer(bool val) {
+    if (mathRenderer() != val) { m_settings.setValue("mathRenderer", val); emit mathRendererChanged(); }
+}
+
+bool SettingsManager::mermaidEnabled() const { return m_settings.value("mermaidEnabled", false).toBool(); }
+void SettingsManager::setMermaidEnabled(bool val) {
+    if (mermaidEnabled() != val) { m_settings.setValue("mermaidEnabled", val); emit mermaidEnabledChanged(); }
+}
+
+int SettingsManager::historyMessageCount() const { return m_settings.value("historyMessageCount", 20).toInt(); }
+void SettingsManager::setHistoryMessageCount(int count) {
+    if (historyMessageCount() != count) { m_settings.setValue("historyMessageCount", count); emit historyMessageCountChanged(); }
+}
+
+QString SettingsManager::chatMode() const { return m_settings.value("chatMode", "quick").toString(); }
+void SettingsManager::setChatMode(const QString &mode) {
+    if (chatMode() != mode) { m_settings.setValue("chatMode", mode); emit chatModeChanged(); }
+}
+
+bool SettingsManager::deepResearch() const { return m_settings.value("deepResearch", false).toBool(); }
+void SettingsManager::setDeepResearch(bool val) {
+    if (deepResearch() != val) { m_settings.setValue("deepResearch", val); emit deepResearchChanged(); }
+}
+
+bool SettingsManager::markdownRendering() const { return m_settings.value("markdownRendering", true).toBool(); }
+void SettingsManager::setMarkdownRendering(bool val) {
+    if (markdownRendering() != val) { m_settings.setValue("markdownRendering", val); emit markdownRenderingChanged(); }
+}
+
 QString SettingsManager::systemPrompt() const { return m_settings.value("systemPrompt", "").toString(); }
 void SettingsManager::setSystemPrompt(const QString &prompt) {
     if (systemPrompt() != prompt) { m_settings.setValue("systemPrompt", prompt); emit systemPromptChanged(); }

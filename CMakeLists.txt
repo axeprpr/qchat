@@ -23,6 +23,7 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS
     Svg
     Widgets
     PrintSupport
+    Multimedia
 )
 
 qt_standard_project_setup(REQUIRES 6.5)
@@ -70,20 +71,24 @@ set(CPP_SOURCES
     src/core/MarkdownHelper.cpp
     src/core/ThinkingParser.h
     src/core/ThinkingParser.cpp
+    src/core/SandboxManager.h
+    src/core/SandboxManager.cpp
+    src/core/VoiceManager.h
+    src/core/VoiceManager.cpp
 )
 
 set(QML_FILES
     src/qml/Main.qml
-    src/qml/ChatView.qml
-    src/qml/Sidebar.qml
+    src/qml/ChatPage.qml
+    src/qml/ChatInputBar.qml
     src/qml/MessageBubble.qml
-    src/qml/SettingsDialog.qml
-    src/qml/WelcomeView.qml
     src/qml/ThinkingBlock.qml
-    src/qml/DocumentChip.qml
-    src/qml/ProviderConfig.qml
-    src/qml/IconButton.qml
-    src/qml/Tag.qml
+    src/qml/WelcomePage.qml
+    src/qml/CallsPage.qml
+    src/qml/SettingsPage.qml
+    src/qml/ConversationSettings.qml
+    src/qml/ProviderConfigPanel.qml
+    src/qml/ToolSettingsDialog.qml
 )
 
 set(RESOURCE_FILES
@@ -100,16 +105,16 @@ qt_add_qml_module(${PROJECT_NAME}
     VERSION 1.0
     QML_FILES
         src/qml/Main.qml
-        src/qml/ChatView.qml
-        src/qml/Sidebar.qml
+        src/qml/ChatPage.qml
+        src/qml/ChatInputBar.qml
         src/qml/MessageBubble.qml
-        src/qml/SettingsDialog.qml
-        src/qml/WelcomeView.qml
         src/qml/ThinkingBlock.qml
-        src/qml/DocumentChip.qml
-        src/qml/ProviderConfig.qml
-        src/qml/IconButton.qml
-        src/qml/Tag.qml
+        src/qml/WelcomePage.qml
+        src/qml/CallsPage.qml
+        src/qml/SettingsPage.qml
+        src/qml/ConversationSettings.qml
+        src/qml/ProviderConfigPanel.qml
+        src/qml/ToolSettingsDialog.qml
     RESOURCE_PREFIX /qt/qml
 )
 
@@ -124,6 +129,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Svg
     Qt6::Widgets
     Qt6::PrintSupport
+    Qt6::Multimedia
 )
 
 if(FLUENTUI_AVAILABLE)

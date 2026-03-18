@@ -1,17 +1,5 @@
 <RCC>
     <qresource prefix="/">
-        <file>icons/send.svg</file>
-        <file>icons/stop.svg</file>
-        <file>icons/plus.svg</file>
-        <file>icons/settings.svg</file>
-        <file>icons/delete.svg</file>
-        <file>icons/attach.svg</file>
-        <file>icons/copy.svg</file>
-        <file>icons/retry.svg</file>
-        <file>icons/thinking.svg</file>
-        <file>icons/moon.svg</file>
-        <file>icons/sun.svg</file>
-        <file>icons/export.svg</file>
-        <file>icons/sidebar.svg</file>
+        <file>icons/logo.svg</file>
     </qresource>
 </RCC>

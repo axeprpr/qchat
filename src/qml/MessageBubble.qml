@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import FluentUI
 
 Item {
     id: root
@@ -12,30 +13,28 @@ Item {
     required property var attachments
     required property bool isError
 
-    height: bubbleColumn.height + 8
     property bool isUser: messageRole === "user"
+    height: bubbleColumn.implicitHeight + 16
 
     ColumnLayout {
         id: bubbleColumn
-        width: parent.width
+        width: parent.width - 32
+        x: 16
         spacing: 4
 
         // Role label
-        Text {
-            Layout.leftMargin: isUser ? 0 : 60
-            Layout.rightMargin: isUser ? 60 : 0
+        FluText {
             Layout.alignment: isUser ? Qt.AlignRight : Qt.AlignLeft
             text: isUser ? "You" : "Assistant"
-            color: theme.textSecondary
-            font.pixelSize: 11
-            font.bold: true
+            color: FluTheme.dark ? "#aaa" : "#666"
+            fontSize: FluTextStyle.Caption
         }
 
-        // Thinking block (for assistant)
+        // Thinking block
         ThinkingBlock {
-            Layout.leftMargin: 60
-            Layout.rightMargin: 60
             Layout.fillWidth: true
+            Layout.leftMargin: isUser ? 80 : 0
+            Layout.rightMargin: isUser ? 0 : 80
             visible: !isUser && thinkingContent.length > 0
             content: thinkingContent
             isActive: isStreaming && messageContent.length === 0
@@ -43,100 +42,96 @@ Item {
 
         // Attached files
         Flow {
-            Layout.leftMargin: isUser ? 60 : 60
-            Layout.rightMargin: isUser ? 16 : 60
             Layout.alignment: isUser ? Qt.AlignRight : Qt.AlignLeft
             spacing: 4
             visible: attachments && attachments.length > 0
 
             Repeater {
                 model: attachments || []
-                delegate: Tag {
+                delegate: FluButton {
                     text: modelData.split("/").pop()
-                    color: theme.primary
+                    iconSource: FluentIcons.Attach
+                    enabled: false
                 }
             }
         }
 
         // Message bubble
         Rectangle {
-            Layout.leftMargin: isUser ? 120 : 60
-            Layout.rightMargin: isUser ? 16 : 120
             Layout.alignment: isUser ? Qt.AlignRight : Qt.AlignLeft
-            Layout.maximumWidth: root.width - 180
+            Layout.maximumWidth: root.width * 0.72
             Layout.minimumWidth: 60
-            width: Math.min(contentText.implicitWidth + 32, Layout.maximumWidth)
-            height: contentText.implicitHeight + 24
-            radius: theme.radius
-            color: isError ? theme.errorBg :
-                   isUser ? theme.userBubble : theme.assistantBubble
-            border.color: isError ? theme.danger : "transparent"
+            width: Math.min(msgText.implicitWidth + 28, Layout.maximumWidth)
+            height: msgText.implicitHeight + 24
+            radius: 8
+            color: isError
+                ? (FluTheme.dark ? "#3d1a1a" : "#fff0f0")
+                : isUser
+                    ? FluTheme.primaryColor
+                    : (FluTheme.dark ? "#2d2d2d" : "#f0f0f5")
+            border.color: isError ? "#e74c3c" : "transparent"
             border.width: isError ? 1 : 0
 
-            Text {
-                id: contentText
-                anchors.fill: parent
-                anchors.margins: 12
-                text: isUser ? messageContent :
-                      (messageContent.length > 0 ? chatManager.markdown.toHtml(messageContent) :
-                       (isStreaming ? "<span style='color:#888;'>Thinking...</span>" : ""))
+            FluText {
+                id: msgText
+                anchors {
+                    fill: parent
+                    margins: 12
+                }
+                text: isUser
+                    ? messageContent
+                    : (messageContent.length > 0
+                        ? chatManager.markdown.toHtml(messageContent)
+                        : (isStreaming ? "<i style='color:#888'>Thinking...</i>" : ""))
                 textFormat: isUser ? Text.PlainText : Text.RichText
-                color: isUser ? theme.primaryText : (isError ? theme.danger : theme.text)
-                font.pixelSize: theme.fontSizeBase
+                color: isError
+                    ? "#e74c3c"
+                    : isUser ? "#ffffff" : (FluTheme.dark ? "#e0e0e0" : "#1a1a1a")
                 wrapMode: Text.Wrap
                 lineHeight: 1.5
                 onLinkActivated: (link) => Qt.openUrlExternally(link)
-
-                MouseArea {
-                    anchors.fill: parent
-                    acceptedButtons: Qt.NoButton
-                    cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
-                }
             }
 
-            // Streaming indicator
+            // Streaming dot
             Rectangle {
-                anchors.bottom: parent.bottom
-                anchors.right: parent.right
-                anchors.margins: 8
-                width: 8; height: 8
-                radius: 4
-                color: theme.primary
+                anchors { bottom: parent.bottom; right: parent.right; margins: 8 }
+                width: 8; height: 8; radius: 4
+                color: FluTheme.primaryColor
                 visible: isStreaming
 
                 SequentialAnimation on opacity {
                     running: isStreaming
                     loops: Animation.Infinite
-                    NumberAnimation { to: 0.3; duration: 600 }
+                    NumberAnimation { to: 0.2; duration: 600 }
                     NumberAnimation { to: 1.0; duration: 600 }
                 }
             }
         }
 
-        // Action buttons (for assistant messages)
+        // Action buttons (assistant only)
         Row {
-            Layout.leftMargin: 60
+            Layout.alignment: Qt.AlignLeft
             spacing: 4
             visible: !isUser && !isStreaming && messageContent.length > 0
 
-            IconButton {
+            FluIconButton {
                 width: 28; height: 28
-                icon.source: "qrc:/icons/copy.svg"
-                icon.width: 14; icon.height: 14
+                iconSource: FluentIcons.Copy
+                iconSize: 14
                 ToolTip.text: "Copy"
                 ToolTip.visible: hovered
                 onClicked: {
-                    // Copy to clipboard
                     copyHelper.text = messageContent
                     copyHelper.selectAll()
                     copyHelper.copy()
+                    FluToast.success("Copied")
                 }
             }
 
-            IconButton {
+            FluIconButton {
                 width: 28; height: 28
-                icon.source: "qrc:/icons/retry.svg"
-                icon.width: 14; icon.height: 14
+                iconSource: FluentIcons.Refresh
+                iconSize: 14
                 ToolTip.text: "Retry"
                 ToolTip.visible: hovered
                 onClicked: chatManager.retryLastMessage()
@@ -144,7 +139,6 @@ Item {
         }
     }
 
-    // Hidden text field for clipboard
     TextEdit {
         id: copyHelper
         visible: false
