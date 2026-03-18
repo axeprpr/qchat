@@ -97,9 +97,11 @@ Popup {
             // Providers tab
             ScrollView {
                 ColumnLayout {
-                    width: parent.width
+                    width: parent.width - 40
+                    x: 20
                     spacing: 16
-                    padding: 20
+
+                    Item { height: 4 }
 
                     Repeater {
                         model: ["OpenAI", "Claude", "DeepSeek", "Gemini", "Ollama"]
@@ -108,6 +110,8 @@ Popup {
                             providerName: modelData
                         }
                     }
+
+                    Item { height: 4 }
                 }
             }
 
