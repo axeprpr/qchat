@@ -71,6 +71,8 @@ set(CPP_SOURCES
     src/core/MarkdownHelper.cpp
     src/core/ThinkingParser.h
     src/core/ThinkingParser.cpp
+    src/core/ImageHelper.h
+    src/core/ImageHelper.cpp
     src/core/SandboxManager.h
     src/core/SandboxManager.cpp
     src/core/VoiceManager.h

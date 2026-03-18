@@ -2,6 +2,7 @@
 #include <QJsonDocument>
 #include <QNetworkRequest>
 #include <QUrl>
+#include <QFile>
 
 ClaudeProvider::ClaudeProvider(QObject *parent) : ModelProvider(parent) {
     m_networkManager = new QNetworkAccessManager(this);
@@ -99,7 +100,68 @@ QJsonArray ClaudeProvider::messagesToJson(const QList<ChatMessage> &messages) {
     for (const auto &msg : messages) {
         QJsonObject obj;
         obj["role"] = msg.role;
-        obj["content"] = msg.content;
+
+        // Check if message has image attachments
+        bool hasImages = false;
+        for (const QString &path : msg.attachments) {
+            if (path.endsWith(".png", Qt::CaseInsensitive) ||
+                path.endsWith(".jpg", Qt::CaseInsensitive) ||
+                path.endsWith(".jpeg", Qt::CaseInsensitive) ||
+                path.endsWith(".webp", Qt::CaseInsensitive) ||
+                path.endsWith(".gif", Qt::CaseInsensitive)) {
+                hasImages = true;
+                break;
+            }
+        }
+
+        if (hasImages && msg.role == "user") {
+            // Use content array format for vision
+            QJsonArray contentArray;
+
+            // Add image parts first (Claude prefers images before text)
+            for (const QString &path : msg.attachments) {
+                if (path.endsWith(".png", Qt::CaseInsensitive) ||
+                    path.endsWith(".jpg", Qt::CaseInsensitive) ||
+                    path.endsWith(".jpeg", Qt::CaseInsensitive) ||
+                    path.endsWith(".webp", Qt::CaseInsensitive) ||
+                    path.endsWith(".gif", Qt::CaseInsensitive)) {
+
+                    // Read and encode image to base64
+                    QFile file(path);
+                    if (file.open(QIODevice::ReadOnly)) {
+                        QByteArray imageData = file.readAll();
+                        QString base64 = imageData.toBase64();
+                        QString mediaType = "image/jpeg";
+                        if (path.endsWith(".png", Qt::CaseInsensitive)) mediaType = "image/png";
+                        else if (path.endsWith(".webp", Qt::CaseInsensitive)) mediaType = "image/webp";
+                        else if (path.endsWith(".gif", Qt::CaseInsensitive)) mediaType = "image/gif";
+
+                        QJsonObject imagePart;
+                        imagePart["type"] = "image";
+                        QJsonObject source;
+                        source["type"] = "base64";
+                        source["media_type"] = mediaType;
+                        source["data"] = base64;
+                        imagePart["source"] = source;
+                        contentArray.append(imagePart);
+                    }
+                }
+            }
+
+            // Add text content after images
+            if (!msg.content.isEmpty()) {
+                QJsonObject textPart;
+                textPart["type"] = "text";
+                textPart["text"] = msg.content;
+                contentArray.append(textPart);
+            }
+
+            obj["content"] = contentArray;
+        } else {
+            // Plain text content
+            obj["content"] = msg.content;
+        }
+
         arr.append(obj);
     }
     return arr;

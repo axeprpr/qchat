@@ -15,6 +15,7 @@ ChatManager::ChatManager(QObject *parent)
     , m_documentParser(new DocumentParser(this))
     , m_markdown(new MarkdownHelper(this))
     , m_thinkingParser(new ThinkingParser(this))
+    , m_imageHelper(new ImageHelper(this))
 {
     m_dataFilePath = m_settings->dataPath() + "/conversations.json";
     initProviders();

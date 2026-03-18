@@ -2,6 +2,7 @@
 #include <QJsonDocument>
 #include <QNetworkRequest>
 #include <QUrl>
+#include <QFile>
 
 OpenAIProvider::OpenAIProvider(QObject *parent) : ModelProvider(parent) {
     m_networkManager = new QNetworkAccessManager(this);
@@ -97,7 +98,66 @@ QJsonArray OpenAIProvider::messagesToJson(const QList<ChatMessage> &messages) {
     for (const auto &msg : messages) {
         QJsonObject obj;
         obj["role"] = msg.role;
-        obj["content"] = msg.content;
+
+        // Check if message has image attachments
+        bool hasImages = false;
+        for (const QString &path : msg.attachments) {
+            if (path.endsWith(".png", Qt::CaseInsensitive) ||
+                path.endsWith(".jpg", Qt::CaseInsensitive) ||
+                path.endsWith(".jpeg", Qt::CaseInsensitive) ||
+                path.endsWith(".webp", Qt::CaseInsensitive) ||
+                path.endsWith(".gif", Qt::CaseInsensitive)) {
+                hasImages = true;
+                break;
+            }
+        }
+
+        if (hasImages && msg.role == "user") {
+            // Use content array format for vision
+            QJsonArray contentArray;
+
+            // Add text content
+            if (!msg.content.isEmpty()) {
+                QJsonObject textPart;
+                textPart["type"] = "text";
+                textPart["text"] = msg.content;
+                contentArray.append(textPart);
+            }
+
+            // Add image parts
+            for (const QString &path : msg.attachments) {
+                if (path.endsWith(".png", Qt::CaseInsensitive) ||
+                    path.endsWith(".jpg", Qt::CaseInsensitive) ||
+                    path.endsWith(".jpeg", Qt::CaseInsensitive) ||
+                    path.endsWith(".webp", Qt::CaseInsensitive) ||
+                    path.endsWith(".gif", Qt::CaseInsensitive)) {
+
+                    // Read and encode image to base64
+                    QFile file(path);
+                    if (file.open(QIODevice::ReadOnly)) {
+                        QByteArray imageData = file.readAll();
+                        QString base64 = imageData.toBase64();
+                        QString mimeType = "image/jpeg";
+                        if (path.endsWith(".png", Qt::CaseInsensitive)) mimeType = "image/png";
+                        else if (path.endsWith(".webp", Qt::CaseInsensitive)) mimeType = "image/webp";
+                        else if (path.endsWith(".gif", Qt::CaseInsensitive)) mimeType = "image/gif";
+
+                        QJsonObject imagePart;
+                        imagePart["type"] = "image_url";
+                        QJsonObject imageUrl;
+                        imageUrl["url"] = QString("data:%1;base64,%2").arg(mimeType, base64);
+                        imagePart["image_url"] = imageUrl;
+                        contentArray.append(imagePart);
+                    }
+                }
+            }
+
+            obj["content"] = contentArray;
+        } else {
+            // Plain text content
+            obj["content"] = msg.content;
+        }
+
         arr.append(obj);
     }
     return arr;

@@ -9,6 +9,7 @@
 #include "DocumentParser.h"
 #include "MarkdownHelper.h"
 #include "ThinkingParser.h"
+#include "ImageHelper.h"
 
 class ChatManager : public QObject {
     Q_OBJECT
@@ -19,6 +20,7 @@ class ChatManager : public QObject {
     Q_PROPERTY(DocumentParser* documentParser READ documentParser CONSTANT)
     Q_PROPERTY(MarkdownHelper* markdown READ markdown CONSTANT)
     Q_PROPERTY(ThinkingParser* thinkingParser READ thinkingParser CONSTANT)
+    Q_PROPERTY(ImageHelper* imageHelper READ imageHelper CONSTANT)
     Q_PROPERTY(bool isGenerating READ isGenerating NOTIFY isGeneratingChanged)
     Q_PROPERTY(QString currentConversationId READ currentConversationId NOTIFY currentConversationIdChanged)
     Q_PROPERTY(QString chatMode READ chatMode WRITE setChatMode NOTIFY chatModeChanged)
@@ -34,6 +36,7 @@ public:
     DocumentParser* documentParser() const { return m_documentParser; }
     MarkdownHelper* markdown() const { return m_markdown; }
     ThinkingParser* thinkingParser() const { return m_thinkingParser; }
+    ImageHelper* imageHelper() const { return m_imageHelper; }
     bool isGenerating() const { return m_isGenerating; }
     QString currentConversationId() const { return m_currentConversationId; }
     QString chatMode() const { return m_chatMode; }
@@ -84,6 +87,7 @@ private:
     DocumentParser *m_documentParser;
     MarkdownHelper *m_markdown;
     ThinkingParser *m_thinkingParser;
+    ImageHelper *m_imageHelper;
 
     QMap<QString, ModelProvider*> m_providers;
     bool m_isGenerating = false;

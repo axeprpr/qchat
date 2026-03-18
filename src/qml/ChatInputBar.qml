@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Qt.labs.platform as Platform
+import Qt5Compat.GraphicalEffects
 import FluentUI
 
 Rectangle {
@@ -37,10 +38,50 @@ Rectangle {
             Repeater {
                 id: attachedFiles
                 model: ListModel { id: attachedFilesModel }
-                delegate: FluButton {
-                    text: model.name
-                    iconSource: FluentIcons.Attach
-                    onClicked: attachedFilesModel.remove(index)
+                delegate: Rectangle {
+                    width: model.isImage ? 80 : implicitWidth
+                    height: model.isImage ? 80 : 32
+                    radius: 6
+                    color: FluTheme.dark ? "#2d2d2d" : "#f0f0f0"
+                    border.color: FluTheme.dark ? "#444" : "#ddd"
+                    border.width: 1
+
+                    // Image preview
+                    Image {
+                        anchors.fill: parent
+                        anchors.margins: 2
+                        source: model.isImage ? "file:///" + model.path : ""
+                        fillMode: Image.PreserveAspectCrop
+                        visible: model.isImage
+                        layer.enabled: true
+                        layer.effect: OpacityMask {
+                            maskSource: Rectangle {
+                                width: parent.width
+                                height: parent.height
+                                radius: 6
+                            }
+                        }
+                    }
+
+                    // File name for non-images
+                    FluText {
+                        anchors.centerIn: parent
+                        text: model.name
+                        visible: !model.isImage
+                        fontSize: FluTextStyle.Caption
+                    }
+
+                    // Remove button
+                    FluIconButton {
+                        anchors.top: parent.top
+                        anchors.right: parent.right
+                        anchors.margins: 2
+                        width: 20
+                        height: 20
+                        iconSource: FluentIcons.ChromeClose
+                        iconSize: 10
+                        onClicked: attachedFilesModel.remove(index)
+                    }
                 }
             }
         }
@@ -158,7 +199,8 @@ Rectangle {
             if (chatManager.documentParser.isSupported(path)) {
                 attachedFilesModel.append({
                     "name": chatManager.documentParser.fileDescription(path),
-                    "path": path
+                    "path": path,
+                    "isImage": false
                 })
             }
         }
@@ -171,7 +213,11 @@ Rectangle {
         onAccepted: {
             var path = file.toString().replace("file:///", "/").replace("file://", "")
             var name = path.split("/").pop()
-            attachedFilesModel.append({"name": name, "path": path})
+            attachedFilesModel.append({
+                "name": name,
+                "path": path,
+                "isImage": true
+            })
         }
     }
 
