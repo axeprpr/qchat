@@ -112,7 +112,7 @@ FluPage {
         negativeText: "Markdown"
         neutralText: "HTML"
         positiveText: "PDF"
-        onNegativeClicked: exportSaveDialog.exportExt = ".md"; exportSaveDialog.open()
+        onNegativeClicked: { exportSaveDialog.exportExt = ".md"; exportSaveDialog.open() }
         onNeutralClicked: { exportSaveDialog.exportExt = ".html"; exportSaveDialog.open() }
         onPositiveClicked: { exportSaveDialog.exportExt = ".pdf"; exportSaveDialog.open() }
     }
