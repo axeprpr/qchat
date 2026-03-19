@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Qt.labs.platform as Platform
-import Qt5Compat.GraphicalEffects
 import FluentUI
 
 Rectangle {
@@ -42,6 +41,7 @@ Rectangle {
                     width: model.isImage ? 80 : implicitWidth
                     height: model.isImage ? 80 : 32
                     radius: 6
+                    clip: true
                     color: FluTheme.dark ? "#2d2d2d" : "#f0f0f0"
                     border.color: FluTheme.dark ? "#444" : "#ddd"
                     border.width: 1
@@ -53,14 +53,6 @@ Rectangle {
                         source: model.isImage ? "file:///" + model.path : ""
                         fillMode: Image.PreserveAspectCrop
                         visible: model.isImage
-                        layer.enabled: true
-                        layer.effect: OpacityMask {
-                            maskSource: Rectangle {
-                                width: parent.width
-                                height: parent.height
-                                radius: 6
-                            }
-                        }
                     }
 
                     // File name for non-images

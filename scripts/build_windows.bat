@@ -53,6 +53,17 @@ if "%QT_DIR%"=="" (
 REM ---- Add Qt tools to PATH ----
 set "PATH=%QT_DIR%\bin;%QT_DIR%\..\..\Tools\mingw1310_64\bin;%QT_DIR%\..\..\Tools\mingw1120_64\bin;%QT_DIR%\..\..\Tools\Ninja;%PATH%"
 
+REM ---- Check required QML compatibility module ----
+set QT5COMPAT_QML_DIR=%QT_DIR%\qml\Qt5Compat\GraphicalEffects
+if not exist "%QT5COMPAT_QML_DIR%\qmldir" (
+    echo [ERROR] Missing Qt QML module: Qt5Compat.GraphicalEffects
+    echo Install the "Qt 5 Compatibility Module" for this Qt kit in the Qt Maintenance Tool, then rebuild.
+    echo Expected path:
+    echo   %QT5COMPAT_QML_DIR%
+    popd
+    exit /b 1
+)
+
 REM ---- Check FluentUI ----
 if not exist "third_party\FluentUI\CMakeLists.txt" (
     echo.
@@ -125,6 +136,11 @@ REM Use windeployqt6 to copy all required Qt DLLs, QML modules, and plugins
 echo Running windeployqt...
 "%QT_DIR%\bin\windeployqt.exe" --qmldir src\qml --no-translations "%DEPLOY_DIR%\QChat.exe"
 
+if not errorlevel 1 if exist "third_party\FluentUI\src\Qt6\imports" (
+    echo Scanning FluentUI QML imports...
+    "%QT_DIR%\bin\windeployqt.exe" --qmldir third_party\FluentUI\src\Qt6\imports --no-translations "%DEPLOY_DIR%\QChat.exe"
+)
+
 if errorlevel 1 (
     echo [WARNING] windeployqt failed. Trying to copy DLLs manually...
     copy "%QT_DIR%\bin\Qt6Core.dll" "%DEPLOY_DIR%\" >nul 2>&1
@@ -144,6 +160,17 @@ if errorlevel 1 (
     for %%f in (libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll) do (
         where %%f >nul 2>&1 && copy "%%~$PATH:f" "%DEPLOY_DIR%\" >nul 2>&1
     )
+)
+
+if not exist "%DEPLOY_DIR%\qml\Qt5Compat\GraphicalEffects\qmldir" (
+    echo Copying Qt5Compat.GraphicalEffects QML module...
+    xcopy "%QT_DIR%\qml\Qt5Compat\GraphicalEffects" "%DEPLOY_DIR%\qml\Qt5Compat\GraphicalEffects\" /E /I /Y >nul
+)
+
+if not exist "%DEPLOY_DIR%\qml\Qt5Compat\GraphicalEffects\qmldir" (
+    echo [ERROR] Deployment is incomplete: Qt5Compat.GraphicalEffects was not copied.
+    popd
+    exit /b 1
 )
 
 echo.
