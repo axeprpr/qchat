@@ -73,6 +73,12 @@ set(CPP_SOURCES
     src/core/ThinkingParser.cpp
     src/core/ImageHelper.h
     src/core/ImageHelper.cpp
+    src/core/ExportHelper.h
+    src/core/ExportHelper.cpp
+    src/core/PromptLibrary.h
+    src/core/PromptLibrary.cpp
+    src/core/ImageGenProvider.h
+    src/core/ImageGenProvider.cpp
     src/core/SandboxManager.h
     src/core/SandboxManager.cpp
     src/core/VoiceManager.h
@@ -91,6 +97,8 @@ set(QML_FILES
     src/qml/ConversationSettings.qml
     src/qml/ProviderConfigPanel.qml
     src/qml/ToolSettingsDialog.qml
+    src/qml/PromptLibraryDialog.qml
+    src/qml/ImageGenPage.qml
 )
 
 set(RESOURCE_FILES
@@ -117,6 +125,8 @@ qt_add_qml_module(${PROJECT_NAME}
         src/qml/ConversationSettings.qml
         src/qml/ProviderConfigPanel.qml
         src/qml/ToolSettingsDialog.qml
+        src/qml/PromptLibraryDialog.qml
+        src/qml/ImageGenPage.qml
     RESOURCE_PREFIX /qt/qml
 )
 

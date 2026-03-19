@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Qt.labs.platform as Platform
 import FluentUI
 
 FluPage {
@@ -45,11 +46,7 @@ FluPage {
                 iconSize: 16
                 ToolTip.text: "Export"
                 ToolTip.visible: hovered
-                onClicked: {
-                    var path = chatManager.settings.dataPath + "/export.md"
-                    chatManager.exportConversation(path)
-                    FluToast.success("Exported to " + path)
-                }
+                onClicked: exportFormatDialog.open()
             }
         }
 
@@ -104,5 +101,33 @@ FluPage {
     ConversationSettings {
         id: convSettingsDialog
         conversationIndex: chatManager.conversationModel.currentIndex
+    }
+
+    // Export format dialog
+    FluContentDialog {
+        id: exportFormatDialog
+        title: "Export Conversation"
+        message: "Choose export format:"
+        buttonFlags: FluContentDialogType.NegativeButton | FluContentDialogType.NeutralButton | FluContentDialogType.PositiveButton
+        negativeText: "Markdown"
+        neutralText: "HTML"
+        positiveText: "PDF"
+        onNegativeClicked: exportSaveDialog.exportExt = ".md"; exportSaveDialog.open()
+        onNeutralClicked: { exportSaveDialog.exportExt = ".html"; exportSaveDialog.open() }
+        onPositiveClicked: { exportSaveDialog.exportExt = ".pdf"; exportSaveDialog.open() }
+    }
+
+    Platform.FileDialog {
+        id: exportSaveDialog
+        property string exportExt: ".md"
+        title: "Save Export"
+        fileMode: Platform.FileDialog.SaveFile
+        nameFilters: exportExt === ".md" ? ["Markdown (*.md)"] :
+                     exportExt === ".html" ? ["HTML (*.html)"] : ["PDF (*.pdf)"]
+        onAccepted: {
+            var path = file.toString().replace("file:///", "/").replace("file://", "")
+            if (!path.endsWith(exportExt)) path += exportExt
+            chatManager.exportConversation(path)
+        }
     }
 }

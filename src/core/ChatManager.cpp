@@ -6,6 +6,7 @@
 #include <QFile>
 #include <QDir>
 #include <QStandardPaths>
+#include <QFileInfo>
 
 ChatManager::ChatManager(QObject *parent)
     : QObject(parent)
@@ -16,7 +17,15 @@ ChatManager::ChatManager(QObject *parent)
     , m_markdown(new MarkdownHelper(this))
     , m_thinkingParser(new ThinkingParser(this))
     , m_imageHelper(new ImageHelper(this))
+    , m_exportHelper(new ExportHelper(this))
+    , m_promptLibrary(new PromptLibrary(this))
+    , m_imageGen(new ImageGenProvider(this))
 {
+    // Initialize imageGen with OpenAI API key
+    QJsonObject openaiCfg = m_settings->getProviderConfig("OpenAI");
+    m_imageGen->setApiKey(openaiCfg["apiKey"].toString());
+    if (!openaiCfg["baseUrl"].toString().isEmpty())
+        m_imageGen->setBaseUrl(openaiCfg["baseUrl"].toString());
     m_dataFilePath = m_settings->dataPath() + "/conversations.json";
     initProviders();
     loadConversations();
@@ -255,19 +264,14 @@ void ChatManager::loadConversations() {
 }
 
 void ChatManager::exportConversation(const QString &path) {
-    QFile file(path);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) return;
+    // Detect format from file extension
+    QFileInfo fi(path);
+    QString ext = fi.suffix().toLower();
+    ExportHelper::ExportFormat fmt = ExportHelper::Markdown;
+    if (ext == "html" || ext == "htm") fmt = ExportHelper::HTML;
+    else if (ext == "pdf") fmt = ExportHelper::PDF;
 
-    QTextStream out(&file);
-    out.setEncoding(QStringConverter::Utf8);
-
-    auto messages = m_messageModel->toChatMessages();
-    for (const auto &msg : messages) {
-        out << "## " << msg.role.toUpper() << "\n\n";
-        if (!msg.thinkingContent.isEmpty())
-            out << "> **Thinking:**\n> " << QString(msg.thinkingContent).replace("\n", "\n> ") << "\n\n";
-        out << msg.content << "\n\n---\n\n";
-    }
+    m_exportHelper->exportConversation(m_messageModel->toJsonArray(), path, fmt);
 }
 
 QString ChatManager::buildDocumentContext(const QStringList &attachments) {

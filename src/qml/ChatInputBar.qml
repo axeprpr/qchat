@@ -100,6 +100,15 @@ Rectangle {
                 onClicked: uploadMenu.popup()
             }
 
+            // Prompt library button
+            FluIconButton {
+                iconSource: FluentIcons.Library
+                iconSize: 18
+                ToolTip.text: "Prompt Library"
+                ToolTip.visible: hovered
+                onClicked: promptLibraryDialog.open()
+            }
+
             FluMenu {
                 id: uploadMenu
                 FluMenuItem {
@@ -233,5 +242,15 @@ Rectangle {
         chatManager.sendMessage(text, attachments)
         inputArea.clear()
         attachedFilesModel.clear()
+    }
+
+    PromptLibraryDialog {
+        id: promptLibraryDialog
+        onClosed: {
+            if (selectedContent.length > 0) {
+                inputArea.text = selectedContent
+                selectedContent = ""
+            }
+        }
     }
 }

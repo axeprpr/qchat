@@ -79,6 +79,14 @@ FluWindow {
                     nav.push("qrc:/qt/qml/QChat/src/qml/CallsPage.qml")
                 }
             }
+
+            FluPaneItem {
+                title: "Image Gen"
+                icon: FluentIcons.Photo
+                onTap: {
+                    nav.push("qrc:/qt/qml/QChat/src/qml/ImageGenPage.qml")
+                }
+            }
         }
 
         footerItems: ObjectModel {
