@@ -24,7 +24,6 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS
     Widgets
     PrintSupport
     Multimedia
-    Core5Compat
 )
 
 qt_standard_project_setup(REQUIRES 6.5)
@@ -143,7 +142,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Widgets
     Qt6::PrintSupport
     Qt6::Multimedia
-    Qt6::Core5Compat
 )
 
 if(FLUENTUI_AVAILABLE)
