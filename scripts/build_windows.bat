@@ -18,6 +18,17 @@ echo.
 REM ---- Configuration ----
 set BUILD_TYPE=Release
 set BUILD_DIR=build-win
+if "%QT_DIR%"=="" if not "%QT_ROOT_DIR%"=="" set QT_DIR=%QT_ROOT_DIR%
+
+if not "%QT_DIR%"=="" (
+    if exist "%QT_DIR%\bin\qmake.exe" (
+        echo Using Qt from environment: %QT_DIR%
+        goto :found_qt
+    )
+    echo [WARNING] QT_DIR is set but invalid: %QT_DIR%
+    set QT_DIR=
+)
+
 set QT_DIR=
 
 REM Try to find Qt automatically
