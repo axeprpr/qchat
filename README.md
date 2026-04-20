@@ -86,7 +86,12 @@ Drag & drop files directly into the chat:
 
 ### Download
 
-> Prebuilt binaries coming soon! For now, build from source (it's easy).
+Prebuilt Windows packages are now published automatically on each `v*` tag:
+
+- **GitHub Releases**: https://github.com/axeprpr/qchat/releases
+- Artifact format: `qchat-windows-x64-vX.Y.Z.zip` (+ `.sha256.txt`)
+
+If you don't find a package for your platform yet, build from source below.
 
 ### Configure
 
