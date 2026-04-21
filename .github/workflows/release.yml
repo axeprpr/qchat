@@ -54,7 +54,7 @@ jobs:
           host: ${{ matrix.qt_host }}
           target: desktop
           arch: ${{ matrix.qt_arch }}
-          modules: qt5compat qtmultimedia
+          modules: qt5compat qtmultimedia qtshadertools
           cache: true
 
       - name: Install Ninja (Windows)
@@ -119,6 +119,9 @@ jobs:
           if (-not (Test-Path "$DeployDir/QChat.exe")) {
             throw "QChat.exe not found in $DeployDir"
           }
+          if (-not (Test-Path "$DeployDir/qchat.ico")) {
+            throw "qchat.ico not found in $DeployDir"
+          }
 
           New-Item -ItemType Directory -Path release -Force | Out-Null
           $ExeName = "${{ matrix.package_name }}-v$Version.exe"
@@ -126,10 +129,14 @@ jobs:
           $DeployPathForNsis = $DeployPath.Replace('\', '\\')
           $OutFilePath = (Resolve-Path "release").Path + "\\" + $ExeName
           $OutFilePathForNsis = $OutFilePath.Replace('\', '\\')
+          $IconPath = (Resolve-Path "$DeployDir/qchat.ico").Path
+          $IconPathForNsis = $IconPath.Replace('\', '\\')
           $NsiScript = @'
           Unicode true
           Name "QChat"
           OutFile "__OUTFILE__"
+          Icon "__ICON_PATH__"
+          UninstallIcon "__ICON_PATH__"
           InstallDir "$LOCALAPPDATA\QChat"
           RequestExecutionLevel user
           Page directory
@@ -140,17 +147,24 @@ jobs:
           Section "Install"
             SetOutPath "$INSTDIR"
             File /r "__DEPLOY_PATH__\*.*"
-            CreateShortcut "$DESKTOP\QChat.lnk" "$INSTDIR\QChat.exe"
+            CreateDirectory "$SMPROGRAMS\QChat"
+            CreateShortcut "$SMPROGRAMS\QChat\QChat.lnk" "$INSTDIR\QChat.exe" "" "$INSTDIR\qchat.ico" 0
+            CreateShortcut "$SMPROGRAMS\QChat\Uninstall QChat.lnk" "$INSTDIR\Uninstall.exe"
+            CreateShortcut "$DESKTOP\QChat.lnk" "$INSTDIR\QChat.exe" "" "$INSTDIR\qchat.ico" 0
             WriteUninstaller "$INSTDIR\Uninstall.exe"
           SectionEnd
 
           Section "Uninstall"
             Delete "$DESKTOP\QChat.lnk"
+            Delete "$SMPROGRAMS\QChat\QChat.lnk"
+            Delete "$SMPROGRAMS\QChat\Uninstall QChat.lnk"
+            RMDir "$SMPROGRAMS\QChat"
             RMDir /r "$INSTDIR"
           SectionEnd
           '@
           $NsiScript = $NsiScript.Replace("__OUTFILE__", $OutFilePathForNsis)
           $NsiScript = $NsiScript.Replace("__DEPLOY_PATH__", $DeployPathForNsis)
+          $NsiScript = $NsiScript.Replace("__ICON_PATH__", $IconPathForNsis)
           $NsiScript | Out-File -FilePath "release/installer.nsi" -Encoding ascii
 
           $NsisExe = "${env:ProgramFiles(x86)}\\NSIS\\makensis.exe"

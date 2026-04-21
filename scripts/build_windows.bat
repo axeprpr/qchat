@@ -145,32 +145,20 @@ copy "%EXE_PATH%" "%DEPLOY_DIR%\" >nul
 
 REM Use windeployqt6 to copy all required Qt DLLs, QML modules, and plugins
 echo Running windeployqt...
-"%QT_DIR%\bin\windeployqt.exe" --qmldir src\qml --no-translations "%DEPLOY_DIR%\QChat.exe"
+set DEPLOY_ERROR=0
+"%QT_DIR%\bin\windeployqt.exe" --qmldir src\qml --no-translations --compiler-runtime "%DEPLOY_DIR%\QChat.exe"
+if errorlevel 1 set DEPLOY_ERROR=1
 
 if not errorlevel 1 if exist "third_party\FluentUI\src\Qt6\imports" (
     echo Scanning FluentUI QML imports...
-    "%QT_DIR%\bin\windeployqt.exe" --qmldir third_party\FluentUI\src\Qt6\imports --no-translations "%DEPLOY_DIR%\QChat.exe"
+    "%QT_DIR%\bin\windeployqt.exe" --qmldir third_party\FluentUI\src\Qt6\imports --no-translations --compiler-runtime "%DEPLOY_DIR%\QChat.exe"
+    if errorlevel 1 set DEPLOY_ERROR=1
 )
 
-if errorlevel 1 (
-    echo [WARNING] windeployqt failed. Trying to copy DLLs manually...
-    copy "%QT_DIR%\bin\Qt6Core.dll" "%DEPLOY_DIR%\" >nul 2>&1
-    copy "%QT_DIR%\bin\Qt6Gui.dll" "%DEPLOY_DIR%\" >nul 2>&1
-    copy "%QT_DIR%\bin\Qt6Quick.dll" "%DEPLOY_DIR%\" >nul 2>&1
-    copy "%QT_DIR%\bin\Qt6QuickControls2.dll" "%DEPLOY_DIR%\" >nul 2>&1
-    copy "%QT_DIR%\bin\Qt6Network.dll" "%DEPLOY_DIR%\" >nul 2>&1
-    copy "%QT_DIR%\bin\Qt6Svg.dll" "%DEPLOY_DIR%\" >nul 2>&1
-    copy "%QT_DIR%\bin\Qt6Widgets.dll" "%DEPLOY_DIR%\" >nul 2>&1
-    copy "%QT_DIR%\bin\Qt6Qml.dll" "%DEPLOY_DIR%\" >nul 2>&1
-    copy "%QT_DIR%\bin\Qt6QmlModels.dll" "%DEPLOY_DIR%\" >nul 2>&1
-    copy "%QT_DIR%\bin\Qt6OpenGL.dll" "%DEPLOY_DIR%\" >nul 2>&1
-    copy "%QT_DIR%\bin\Qt6PrintSupport.dll" "%DEPLOY_DIR%\" >nul 2>&1
-    copy "%QT_DIR%\bin\Qt6QmlWorkerScript.dll" "%DEPLOY_DIR%\" >nul 2>&1
-
-    REM Copy MinGW runtime DLLs
-    for %%f in (libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll) do (
-        where %%f >nul 2>&1 && copy "%%~$PATH:f" "%DEPLOY_DIR%\" >nul 2>&1
-    )
+if "%DEPLOY_ERROR%"=="1" (
+    echo [ERROR] windeployqt failed. Aborting to avoid a broken package.
+    popd
+    exit /b 1
 )
 
 if not exist "%DEPLOY_DIR%\qml\Qt5Compat\GraphicalEffects\qmldir" (
@@ -182,6 +170,22 @@ if not exist "%DEPLOY_DIR%\qml\Qt5Compat\GraphicalEffects\qmldir" (
     echo [ERROR] Deployment is incomplete: Qt5Compat.GraphicalEffects was not copied.
     popd
     exit /b 1
+)
+
+if not exist "%DEPLOY_DIR%\Qt6Core.dll" (
+    echo [ERROR] Deployment is incomplete: Qt6Core.dll missing.
+    popd
+    exit /b 1
+)
+
+if not exist "%DEPLOY_DIR%\platforms\qwindows.dll" (
+    echo [ERROR] Deployment is incomplete: platforms\qwindows.dll missing.
+    popd
+    exit /b 1
+)
+
+if exist "resources\icons\qchat.ico" (
+    copy /Y "resources\icons\qchat.ico" "%DEPLOY_DIR%\qchat.ico" >nul
 )
 
 echo.
