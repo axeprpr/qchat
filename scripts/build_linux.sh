@@ -32,10 +32,8 @@ fi
 
 if [ -n "${QT_DIR:-}" ]; then
     echo "Using Qt at: $QT_DIR"
-    CMAKE_PREFIX="-DCMAKE_PREFIX_PATH=$QT_DIR"
 else
     echo "Qt not found in common locations, relying on system Qt..."
-    CMAKE_PREFIX=""
 fi
 
 # Clone FluentUI if not present
@@ -54,10 +52,20 @@ echo ""
 
 mkdir -p "$BUILD_DIR"
 
-cmake -B "$BUILD_DIR" -S . \
-    -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
-    -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="bin" \
-    $CMAKE_PREFIX
+CMAKE_ARGS=(
+    "-DCMAKE_BUILD_TYPE=$BUILD_TYPE"
+    "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=bin"
+)
+
+if [ -n "${QT_DIR:-}" ]; then
+    CMAKE_ARGS+=("-DCMAKE_PREFIX_PATH=$QT_DIR")
+fi
+
+if [ "$(uname -s)" = "Darwin" ]; then
+    CMAKE_ARGS+=("-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64")
+fi
+
+cmake -B "$BUILD_DIR" -S . "${CMAKE_ARGS[@]}"
 
 cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" --parallel "$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"
 

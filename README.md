@@ -91,8 +91,7 @@ Prebuilt packages are published automatically on each `v*` tag:
 - **GitHub Releases**: https://github.com/axeprpr/qchat/releases
 - Windows: `qchat-windows-x64-vX.Y.Z.zip`
 - Linux: `qchat-linux-x64-vX.Y.Z.tar.gz`
-- macOS (Intel): `qchat-macos-x64-vX.Y.Z.zip`
-- macOS (Apple Silicon): `qchat-macos-arm64-vX.Y.Z.zip`
+- macOS (Universal): `qchat-macos-universal-vX.Y.Z.zip`
 - Each artifact includes a matching `.sha256.txt` checksum file.
 
 If you don't find a package for your platform yet, build from source below.
