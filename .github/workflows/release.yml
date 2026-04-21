@@ -147,7 +147,16 @@ jobs:
           '@
           $NsiScript = $NsiScript.Replace("__OUTFILE__", "release\\$ExeName")
           $NsiScript | Out-File -FilePath "release/installer.nsi" -Encoding ascii
-          & makensis.exe "release/installer.nsi"
+
+          $NsisExe = "${env:ProgramFiles(x86)}\\NSIS\\makensis.exe"
+          if (-not (Test-Path $NsisExe)) {
+            $NsisExe = (Get-Command makensis.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source)
+          }
+          if (-not $NsisExe) {
+            throw "makensis.exe not found"
+          }
+
+          & $NsisExe "release/installer.nsi"
           if ($LASTEXITCODE -ne 0) {
             throw "NSIS packaging failed"
           }
