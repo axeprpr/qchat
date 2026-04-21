@@ -122,6 +122,8 @@ jobs:
 
           New-Item -ItemType Directory -Path release -Force | Out-Null
           $ExeName = "${{ matrix.package_name }}-v$Version.exe"
+          $DeployPath = (Resolve-Path $DeployDir).Path
+          $DeployPathForNsis = $DeployPath.Replace('\', '\\')
           $NsiScript = @'
           Unicode true
           Name "QChat"
@@ -135,7 +137,7 @@ jobs:
 
           Section "Install"
             SetOutPath "$INSTDIR"
-            File /r "build-win\deploy\*"
+            File /r "__DEPLOY_PATH__\*.*"
             CreateShortcut "$DESKTOP\QChat.lnk" "$INSTDIR\QChat.exe"
             WriteUninstaller "$INSTDIR\Uninstall.exe"
           SectionEnd
@@ -146,6 +148,7 @@ jobs:
           SectionEnd
           '@
           $NsiScript = $NsiScript.Replace("__OUTFILE__", "release\\$ExeName")
+          $NsiScript = $NsiScript.Replace("__DEPLOY_PATH__", $DeployPathForNsis)
           $NsiScript | Out-File -FilePath "release/installer.nsi" -Encoding ascii
 
           $NsisExe = "${env:ProgramFiles(x86)}\\NSIS\\makensis.exe"
