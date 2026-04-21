@@ -16,9 +16,13 @@ BUILD_TYPE="${1:-Release}"
 BUILD_DIR="build"
 
 # Find Qt
-if [ -z "$QT_DIR" ]; then
+if [ -z "${QT_DIR:-}" ] && [ -n "${QT_ROOT_DIR:-}" ]; then
+    QT_DIR="$QT_ROOT_DIR"
+fi
+
+if [ -z "${QT_DIR:-}" ]; then
     # Try common locations
-    for dir in /opt/Qt/6.*/gcc_64 /usr/lib/qt6 "$HOME/Qt/6.*/gcc_64" "$HOME/Qt/6.*/macos"; do
+    for dir in /opt/Qt/6.*/gcc_64 /usr/lib/qt6 "$HOME"/Qt/6.*/gcc_64 "$HOME"/Qt/6.*/macos; do
         if [ -d "$dir" ]; then
             QT_DIR="$dir"
             break
@@ -26,7 +30,7 @@ if [ -z "$QT_DIR" ]; then
     done
 fi
 
-if [ -n "$QT_DIR" ]; then
+if [ -n "${QT_DIR:-}" ]; then
     echo "Using Qt at: $QT_DIR"
     CMAKE_PREFIX="-DCMAKE_PREFIX_PATH=$QT_DIR"
 else

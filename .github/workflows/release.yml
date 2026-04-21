@@ -13,9 +13,41 @@ on:
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
-  build-windows:
-    runs-on: windows-latest
+  build:
+    name: Build ${{ matrix.target_name }}
+    runs-on: ${{ matrix.runs_on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target_name: windows-x64
+            os: windows
+            runs_on: windows-latest
+            qt_host: windows
+            qt_arch: win64_msvc2022_64
+            package_name: qchat-windows-x64
+          - target_name: linux-x64
+            os: linux
+            runs_on: ubuntu-latest
+            qt_host: linux
+            qt_arch: linux_gcc_64
+            package_name: qchat-linux-x64
+          - target_name: macos-x64
+            os: macos
+            runs_on: macos-13
+            qt_host: mac
+            qt_arch: clang_64
+            package_name: qchat-macos-x64
+          - target_name: macos-arm64
+            os: macos
+            runs_on: macos-14
+            qt_host: mac
+            qt_arch: clang_64
+            package_name: qchat-macos-arm64
 
     steps:
       - name: Checkout
@@ -25,13 +57,30 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: "6.8.2"
-          host: "windows"
-          target: "desktop"
-          arch: "win64_msvc2022_64"
-          modules: "qt5compat qtmultimedia"
+          host: ${{ matrix.qt_host }}
+          target: desktop
+          arch: ${{ matrix.qt_arch }}
+          modules: qt5compat qtmultimedia
+          cache: true
 
-      - name: Install Ninja
+      - name: Install Ninja (Windows)
+        if: matrix.os == 'windows'
         run: choco install ninja -y
+
+      - name: Install Ninja (Linux)
+        if: matrix.os == 'linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
+
+      - name: Install Ninja (macOS)
+        if: matrix.os == 'macos'
+        shell: bash
+        run: |
+          set -euo pipefail
+          brew install ninja
 
       - name: Resolve Version
         id: version
@@ -45,6 +94,7 @@ jobs:
           "app_version=$appVersion" >> $env:GITHUB_OUTPUT
 
       - name: Build and Deploy (Windows)
+        if: matrix.os == 'windows'
         shell: cmd
         run: |
           @echo off
@@ -58,7 +108,16 @@ jobs:
           call scripts\build_windows.bat
           endlocal
 
-      - name: Package Release Files
+      - name: Build (Linux/macOS)
+        if: matrix.os != 'windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x scripts/build_linux.sh
+          ./scripts/build_linux.sh Release
+
+      - name: Package Windows Artifact
+        if: matrix.os == 'windows'
         shell: pwsh
         run: |
           $Version = "${{ steps.version.outputs.app_version }}"
@@ -68,40 +127,104 @@ jobs:
           }
 
           New-Item -ItemType Directory -Path release -Force | Out-Null
-          $ZipName = "qchat-windows-x64-v$Version.zip"
+          $ZipName = "${{ matrix.package_name }}-v$Version.zip"
           Compress-Archive -Path "$DeployDir/*" -DestinationPath "release/$ZipName" -Force
 
           $Hash = (Get-FileHash "release/$ZipName" -Algorithm SHA256).Hash.ToLower()
           "$Hash  $ZipName" | Out-File -FilePath "release/$ZipName.sha256.txt" -Encoding ascii
 
+      - name: Package Linux Artifact
+        if: matrix.os == 'linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.app_version }}"
+          BIN="build/QChat"
+          if [ ! -f "$BIN" ]; then
+            echo "QChat binary not found at $BIN" >&2
+            exit 1
+          fi
+
+          mkdir -p release/stage
+          cp "$BIN" release/stage/QChat
+          chmod +x release/stage/QChat
+
+          PKG="${{ matrix.package_name }}-v${VERSION}.tar.gz"
+          tar -czf "release/${PKG}" -C release/stage QChat
+          HASH="$(sha256sum "release/${PKG}" | awk '{print tolower($1)}')"
+          echo "${HASH}  ${PKG}" > "release/${PKG}.sha256.txt"
+
+      - name: Package macOS Artifact
+        if: matrix.os == 'macos'
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.app_version }}"
+          APP_PATH=""
+
+          if [ -d "build/QChat.app" ]; then
+            APP_PATH="build/QChat.app"
+          elif [ -d "build/Release/QChat.app" ]; then
+            APP_PATH="build/Release/QChat.app"
+          fi
+
+          if [ -z "$APP_PATH" ]; then
+            echo "QChat.app not found under build output" >&2
+            exit 1
+          fi
+
+          "$QT_ROOT_DIR/bin/macdeployqt" "$APP_PATH" -qmldir=src/qml
+
+          mkdir -p release
+          PKG="${{ matrix.package_name }}-v${VERSION}.zip"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "release/${PKG}"
+          HASH="$(shasum -a 256 "release/${PKG}" | awk '{print tolower($1)}')"
+          echo "${HASH}  ${PKG}" > "release/${PKG}.sha256.txt"
+
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: qchat-win-x64-v${{ steps.version.outputs.app_version }}
+          name: ${{ matrix.package_name }}-v${{ steps.version.outputs.app_version }}
           path: |
             release/*.zip
+            release/*.tar.gz
             release/*.sha256.txt
           if-no-files-found: error
 
+  publish:
+    name: Publish Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-dist
+          merge-multiple: true
+
+      - name: Show release files
+        shell: bash
+        run: |
+          set -euo pipefail
+          ls -lah release-dist
+
       - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          name: QChat v${{ steps.version.outputs.app_version }}
+          name: QChat ${{ github.ref_name }}
           generate_release_notes: true
           overwrite_files: true
           files: |
-            release/*.zip
-            release/*.sha256.txt
+            release-dist/*
 
       - name: Set up Python
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
 
       - name: Upload OSS mirror
-        if: startsWith(github.ref, 'refs/tags/v')
         env:
           ALIYUN_OSS_ENDPOINT: ${{ secrets.ALIYUN_OSS_ENDPOINT }}
           ALIYUN_OSS_BUCKET: ${{ secrets.ALIYUN_OSS_BUCKET }}
@@ -136,7 +259,7 @@ jobs:
           bucket = oss2.Bucket(auth, f"https://{endpoint}", bucket_name)
 
           targets = [f"{base_prefix}/{ref_name}", f"{base_prefix}/latest"]
-          files = sorted(path for path in Path("release").iterdir() if path.is_file())
+          files = sorted(path for path in Path("release-dist").iterdir() if path.is_file())
           if not files:
               raise SystemExit("no release artifacts found")
 
