@@ -2,11 +2,13 @@
 #include "OpenAIProvider.h"
 #include "ClaudeProvider.h"
 #include "OllamaProvider.h"
+#include "ExternalAgentProvider.h"
 #include <QJsonDocument>
 #include <QFile>
 #include <QDir>
 #include <QStandardPaths>
 #include <QFileInfo>
+#include <QSet>
 
 ChatManager::ChatManager(QObject *parent)
     : QObject(parent)
@@ -35,6 +37,8 @@ ChatManager::ChatManager(QObject *parent)
         m_currentConversationId = id;
         m_messageModel->fromJsonArray(messages);
         emit currentConversationIdChanged();
+        emit conversationAgentChanged();
+        emit conversationCapabilitiesChanged();
     });
 }
 
@@ -46,6 +50,7 @@ void ChatManager::initProviders() {
     QJsonObject cfg = m_settings->getProviderConfig("OpenAI");
     openaiConfig.apiKey = cfg["apiKey"].toString();
     openaiConfig.baseUrl = cfg["baseUrl"].toString();
+    openaiConfig.extra = m_settings->getProviderExtra("OpenAI");
     if (!cfg["defaultModel"].toString().isEmpty())
         openaiConfig.defaultModel = cfg["defaultModel"].toString();
     openai->setConfig(openaiConfig);
@@ -58,6 +63,7 @@ void ChatManager::initProviders() {
     cfg = m_settings->getProviderConfig("Claude");
     claudeConfig.apiKey = cfg["apiKey"].toString();
     claudeConfig.baseUrl = cfg["baseUrl"].toString();
+    claudeConfig.extra = m_settings->getProviderExtra("Claude");
     if (!cfg["defaultModel"].toString().isEmpty())
         claudeConfig.defaultModel = cfg["defaultModel"].toString();
     claude->setConfig(claudeConfig);
@@ -69,6 +75,7 @@ void ChatManager::initProviders() {
     ollamaConfig.defaultModel = "llama3.3";
     cfg = m_settings->getProviderConfig("Ollama");
     ollamaConfig.baseUrl = cfg["baseUrl"].toString();
+    ollamaConfig.extra = m_settings->getProviderExtra("Ollama");
     if (!cfg["defaultModel"].toString().isEmpty())
         ollamaConfig.defaultModel = cfg["defaultModel"].toString();
     ollama->setConfig(ollamaConfig);
@@ -82,6 +89,7 @@ void ChatManager::initProviders() {
     dsConfig.defaultModel = "deepseek-chat";
     cfg = m_settings->getProviderConfig("DeepSeek");
     dsConfig.apiKey = cfg["apiKey"].toString();
+    dsConfig.extra = m_settings->getProviderExtra("DeepSeek");
     if (!cfg["baseUrl"].toString().isEmpty())
         dsConfig.baseUrl = cfg["baseUrl"].toString();
     if (!cfg["defaultModel"].toString().isEmpty())
@@ -97,16 +105,62 @@ void ChatManager::initProviders() {
     geminiConfig.defaultModel = "gemini-2.5-pro";
     cfg = m_settings->getProviderConfig("Gemini");
     geminiConfig.apiKey = cfg["apiKey"].toString();
+    geminiConfig.extra = m_settings->getProviderExtra("Gemini");
     if (!cfg["baseUrl"].toString().isEmpty())
         geminiConfig.baseUrl = cfg["baseUrl"].toString();
     if (!cfg["defaultModel"].toString().isEmpty())
         geminiConfig.defaultModel = cfg["defaultModel"].toString();
     gemini->setConfig(geminiConfig);
     m_providers["Gemini"] = gemini;
+
+    auto *dify = new ExternalAgentProvider("Dify", this);
+    ProviderConfig difyConfig;
+    difyConfig.name = "Dify";
+    cfg = m_settings->getProviderConfig("Dify");
+    difyConfig.apiKey = cfg["apiKey"].toString();
+    difyConfig.baseUrl = cfg["baseUrl"].toString();
+    difyConfig.defaultModel = cfg["defaultModel"].toString();
+    difyConfig.extra = m_settings->getProviderExtra("Dify");
+    dify->setConfig(difyConfig);
+    m_providers["Dify"] = dify;
+
+    auto *deerFlow = new ExternalAgentProvider("DeerFlow", this);
+    ProviderConfig deerFlowConfig;
+    deerFlowConfig.name = "DeerFlow";
+    cfg = m_settings->getProviderConfig("DeerFlow");
+    deerFlowConfig.apiKey = cfg["apiKey"].toString();
+    deerFlowConfig.baseUrl = cfg["baseUrl"].toString();
+    deerFlowConfig.defaultModel = cfg["defaultModel"].toString();
+    deerFlowConfig.extra = m_settings->getProviderExtra("DeerFlow");
+    deerFlow->setConfig(deerFlowConfig);
+    m_providers["DeerFlow"] = deerFlow;
 }
 
 ModelProvider* ChatManager::currentProvider() {
-    return m_providers.value(m_settings->currentProvider(), nullptr);
+    return m_providers.value(currentProviderName(), nullptr);
+}
+
+QString ChatManager::currentProviderName() const {
+    QString providerName = m_settings->currentProvider();
+
+    QString agentId = m_pendingAgentId.trimmed();
+    if (!m_currentConversationId.isEmpty()) {
+        agentId = m_conversationModel->getConversationAgentById(m_currentConversationId).trimmed();
+        const QString conversationProvider = m_conversationModel->getConversationProviderById(m_currentConversationId).trimmed();
+        if (!conversationProvider.isEmpty()) {
+            providerName = conversationProvider;
+        }
+    }
+
+    if (!agentId.isEmpty()) {
+        const QJsonObject agent = m_settings->getAgentById(agentId);
+        const QString agentProvider = agent.value("provider").toString().trimmed();
+        if (!agentProvider.isEmpty()) {
+            providerName = agentProvider;
+        }
+    }
+
+    return providerName;
 }
 
 void ChatManager::sendMessage(const QString &content, const QStringList &attachments) {
@@ -116,6 +170,24 @@ void ChatManager::sendMessage(const QString &content, const QStringList &attachm
     // Create conversation if needed
     if (m_currentConversationId.isEmpty()) {
         m_currentConversationId = m_conversationModel->createConversation();
+        const int index = m_conversationModel->currentIndex();
+        if (index >= 0) {
+            QJsonObject settings;
+            settings["provider"] = currentProviderName();
+            if (!m_pendingAgentId.trimmed().isEmpty()) {
+                settings["agentId"] = m_pendingAgentId.trimmed();
+            }
+            settings["skillIds"] = m_pendingSkillIds;
+            settings["mcpServerIds"] = m_pendingMcpServerIds;
+            m_conversationModel->updateConversationSettings(index, settings);
+            if (isExternalProvider(currentProviderName())) {
+                m_conversationModel->updateConversationRuntime(index, QJsonObject{
+                    {"conversation_id", ""},
+                    {"last_message_id", ""},
+                    {"run_id", ""},
+                });
+            }
+        }
         emit currentConversationIdChanged();
     }
 
@@ -128,21 +200,101 @@ void ChatManager::sendMessage(const QString &content, const QStringList &attachm
     m_messageModel->addMessage("user", content, attachments);
 
     auto *provider = currentProvider();
+    const QString providerName = currentProviderName();
     if (!provider) {
         m_messageModel->addErrorMessage("No provider configured. Please set up a provider in Settings.");
         return;
     }
 
-    if (provider->config().apiKey.isEmpty() && m_settings->currentProvider() != "Ollama") {
-        m_messageModel->addErrorMessage("API key not configured for " + m_settings->currentProvider() +
+    const QJsonArray skillIds = effectiveSkillIds();
+    const QJsonArray mcpServerIds = effectiveMcpServerIds();
+    const QJsonArray selectedSkills = resolveSkills(skillIds);
+    const QJsonArray selectedMcpServers = resolveMcpServers(mcpServerIds);
+
+    // Refresh provider config from settings so changes take effect immediately.
+    {
+        const QString activeAgentId = conversationAgentId();
+        const QJsonObject agent = activeAgentId.isEmpty() ? QJsonObject{} : m_settings->getAgentById(activeAgentId);
+
+        ProviderConfig config = provider->config();
+        const QJsonObject cfg = m_settings->getProviderConfig(providerName);
+        config.apiKey = cfg["apiKey"].toString();
+        if (!cfg["baseUrl"].toString().isEmpty() ||
+            providerName == "OpenAI" || providerName == "Claude" || providerName == "Ollama" ||
+            isExternalProvider(providerName)) {
+            config.baseUrl = cfg["baseUrl"].toString();
+        }
+        if (!cfg["defaultModel"].toString().isEmpty()) {
+            config.defaultModel = cfg["defaultModel"].toString();
+        }
+        config.extra = m_settings->getProviderExtra(providerName);
+
+        if (!agent.isEmpty()) {
+            if (!agent.value("apiKey").toString().trimmed().isEmpty()) {
+                config.apiKey = agent.value("apiKey").toString().trimmed();
+            }
+            if (!agent.value("baseUrl").toString().trimmed().isEmpty()) {
+                config.baseUrl = agent.value("baseUrl").toString().trimmed();
+            }
+            if (!agent.value("model").toString().trimmed().isEmpty()) {
+                config.defaultModel = agent.value("model").toString().trimmed();
+            }
+
+            if (providerName == "Dify") {
+                if (!agent.value("userId").toString().trimmed().isEmpty()) {
+                    config.extra["userId"] = agent.value("userId").toString().trimmed();
+                }
+            } else if (providerName == "DeerFlow") {
+                if (!agent.value("assistantId").toString().trimmed().isEmpty()) {
+                    config.extra["assistantId"] = agent.value("assistantId").toString().trimmed();
+                }
+                if (!agent.value("mode").toString().trimmed().isEmpty()) {
+                    config.extra["mode"] = agent.value("mode").toString().trimmed();
+                }
+                if (!agent.value("modelName").toString().trimmed().isEmpty()) {
+                    config.extra["modelName"] = agent.value("modelName").toString().trimmed();
+                }
+                if (!agent.value("agentName").toString().trimmed().isEmpty()) {
+                    config.extra["agentName"] = agent.value("agentName").toString().trimmed();
+                }
+                if (!agent.value("authToken").toString().trimmed().isEmpty()) {
+                    config.extra["authToken"] = agent.value("authToken").toString().trimmed();
+                }
+            }
+        }
+
+        config.extra["qchat_skill_ids"] = skillIds;
+        config.extra["qchat_mcp_server_ids"] = mcpServerIds;
+        config.extra["qchat_skills"] = selectedSkills;
+        config.extra["qchat_mcp_servers"] = selectedMcpServers;
+
+        provider->setConfig(config);
+    }
+
+    if (provider->config().apiKey.isEmpty() && providerName != "Ollama" && !isExternalProvider(providerName)) {
+        m_messageModel->addErrorMessage("API key not configured for " + providerName +
                                          ". Please add your API key in Settings.");
         return;
     }
 
     // Prepare messages with system prompt
     QList<ChatMessage> chatMessages;
-    if (!m_settings->systemPrompt().isEmpty()) {
-        chatMessages.append({"system", m_settings->systemPrompt(), "", {}});
+    const int conversationIndex = m_conversationModel->currentIndex();
+    const QJsonObject convSettings = m_conversationModel->getConversationSettings(conversationIndex);
+    QString mergedSystemPrompt = m_settings->systemPrompt();
+    const QString conversationSystemPrompt = convSettings.value("systemPrompt").toString().trimmed();
+    if (!conversationSystemPrompt.isEmpty()) {
+        mergedSystemPrompt = conversationSystemPrompt;
+    }
+    const QString capabilityInstruction = buildCapabilityInstruction(selectedSkills, selectedMcpServers);
+    if (!capabilityInstruction.isEmpty()) {
+        if (!mergedSystemPrompt.isEmpty()) {
+            mergedSystemPrompt += "\n\n";
+        }
+        mergedSystemPrompt += capabilityInstruction;
+    }
+    if (!mergedSystemPrompt.isEmpty()) {
+        chatMessages.append({"system", mergedSystemPrompt, "", {}});
     }
 
     // Add conversation history (with document context for attached files)
@@ -159,13 +311,29 @@ void ChatManager::sendMessage(const QString &content, const QStringList &attachm
     m_messageModel->startAssistantMessage();
 
     // Connect provider signals
+    m_activeProvider = provider;
+    QJsonObject providerContext = m_conversationModel->getConversationRuntimeById(m_currentConversationId);
+    providerContext["qchat_skill_ids"] = skillIds;
+    providerContext["qchat_mcp_server_ids"] = mcpServerIds;
+    providerContext["qchat_skills"] = selectedSkills;
+    providerContext["qchat_mcp_servers"] = selectedMcpServers;
+    provider->setConversationContext(providerContext);
     connect(provider, &ModelProvider::responseChunk, this, &ChatManager::onResponseChunk);
     connect(provider, &ModelProvider::thinkingChunk, this, &ChatManager::onThinkingChunk);
     connect(provider, &ModelProvider::responseFinished, this, &ChatManager::onResponseFinished);
     connect(provider, &ModelProvider::errorOccurred, this, &ChatManager::onProviderError);
+    connect(provider, &ModelProvider::sessionUpdated, this, &ChatManager::onProviderSessionUpdated);
+
+    double requestTemperature = m_settings->temperature();
+    if (convSettings.contains("temperature")) {
+        const double conversationTemp = convSettings.value("temperature").toDouble(-1.0);
+        if (conversationTemp >= 0.0) {
+            requestTemperature = conversationTemp;
+        }
+    }
 
     provider->sendMessage(chatMessages, m_settings->currentModel(),
-                          m_settings->temperature(), m_settings->maxTokens(),
+                          requestTemperature, m_settings->maxTokens(),
                           m_settings->enableThinking());
 }
 
@@ -200,18 +368,28 @@ void ChatManager::onProviderError(const QString &errorMsg) {
     disconnectProvider();
 }
 
+void ChatManager::onProviderSessionUpdated(const QJsonObject &session) {
+    if (m_currentConversationId.isEmpty()) {
+        return;
+    }
+    m_conversationModel->updateConversationRuntimeById(m_currentConversationId, session);
+    m_conversationModel->saveToFile(m_dataFilePath);
+}
+
 void ChatManager::disconnectProvider() {
-    auto *provider = currentProvider();
+    auto *provider = m_activeProvider ? m_activeProvider : currentProvider();
     if (provider) {
         disconnect(provider, &ModelProvider::responseChunk, this, &ChatManager::onResponseChunk);
         disconnect(provider, &ModelProvider::thinkingChunk, this, &ChatManager::onThinkingChunk);
         disconnect(provider, &ModelProvider::responseFinished, this, &ChatManager::onResponseFinished);
         disconnect(provider, &ModelProvider::errorOccurred, this, &ChatManager::onProviderError);
+        disconnect(provider, &ModelProvider::sessionUpdated, this, &ChatManager::onProviderSessionUpdated);
     }
+    m_activeProvider = nullptr;
 }
 
 void ChatManager::stopGeneration() {
-    auto *provider = currentProvider();
+    auto *provider = m_activeProvider ? m_activeProvider : currentProvider();
     if (provider) {
         provider->cancelRequest();
     }
@@ -223,23 +401,76 @@ void ChatManager::stopGeneration() {
 }
 
 void ChatManager::newConversation() {
+    newConversationWithOptions("New Chat", m_settings->currentProvider(), true);
+}
+
+void ChatManager::newConversationWithOptions(const QString &title, const QString &provider, bool newAgentSession) {
+    const QString targetProvider = provider.trimmed();
+    QJsonObject inheritedRuntime;
+    if (!newAgentSession && isExternalProvider(targetProvider) && !m_currentConversationId.isEmpty()) {
+        const QString currentConversationProvider =
+            m_conversationModel->getConversationProviderById(m_currentConversationId).trimmed();
+        if (currentConversationProvider == targetProvider) {
+            inheritedRuntime = m_conversationModel->getConversationRuntimeById(m_currentConversationId);
+        }
+    }
+
     saveCurrentConversation();
-    m_currentConversationId = m_conversationModel->createConversation();
+    m_currentConversationId = m_conversationModel->createConversation(title.trimmed().isEmpty() ? "New Chat" : title.trimmed());
     m_messageModel->clear();
+    m_pendingAgentId.clear();
+    m_pendingSkillIds = QJsonArray{};
+    m_pendingMcpServerIds = QJsonArray{};
+
+    const int index = m_conversationModel->currentIndex();
+    if (index >= 0) {
+        if (!targetProvider.isEmpty()) {
+            QJsonObject settings;
+            settings["provider"] = targetProvider;
+            settings["agentId"] = "";
+            settings["skillIds"] = QJsonArray{};
+            settings["mcpServerIds"] = QJsonArray{};
+            m_conversationModel->updateConversationSettings(index, settings);
+        }
+        if (isExternalProvider(targetProvider)) {
+            if (newAgentSession || inheritedRuntime.isEmpty()) {
+                m_conversationModel->updateConversationRuntime(index, QJsonObject{
+                    {"conversation_id", ""},
+                    {"last_message_id", ""},
+                    {"run_id", ""},
+                });
+            } else {
+                m_conversationModel->updateConversationRuntime(index, inheritedRuntime);
+            }
+        }
+    }
+    m_conversationModel->saveToFile(m_dataFilePath);
     emit currentConversationIdChanged();
+    emit conversationAgentChanged();
+    emit conversationCapabilitiesChanged();
 }
 
 void ChatManager::switchConversation(int index) {
     saveCurrentConversation();
     m_conversationModel->setCurrentIndex(index);
+    m_pendingAgentId.clear();
+    m_pendingSkillIds = QJsonArray{};
+    m_pendingMcpServerIds = QJsonArray{};
+    emit conversationAgentChanged();
+    emit conversationCapabilitiesChanged();
 }
 
 void ChatManager::deleteConversation(int index) {
     m_conversationModel->deleteConversation(index);
     if (m_conversationModel->rowCount() == 0) {
         m_currentConversationId.clear();
+        m_pendingAgentId.clear();
+        m_pendingSkillIds = QJsonArray{};
+        m_pendingMcpServerIds = QJsonArray{};
         m_messageModel->clear();
         emit currentConversationIdChanged();
+        emit conversationAgentChanged();
+        emit conversationCapabilitiesChanged();
     }
 }
 
@@ -286,8 +517,145 @@ QString ChatManager::buildDocumentContext(const QStringList &attachments) {
     return context;
 }
 
+QJsonArray ChatManager::normalizeIdArray(const QJsonArray &ids) const {
+    QSet<QString> seen;
+    QJsonArray normalized;
+    for (const auto &val : ids) {
+        const QString id = val.toString().trimmed();
+        if (id.isEmpty() || seen.contains(id)) {
+            continue;
+        }
+        seen.insert(id);
+        normalized.append(id);
+    }
+    return normalized;
+}
+
+QJsonArray ChatManager::effectiveSkillIds() const {
+    if (!m_currentConversationId.isEmpty()) {
+        const int idx = m_conversationModel->currentIndex();
+        const QJsonObject convSettings = m_conversationModel->getConversationSettings(idx);
+        QJsonArray ids = normalizeIdArray(convSettings.value("skillIds").toArray());
+        if (!ids.isEmpty()) {
+            return ids;
+        }
+
+        const QString agentId = conversationAgentId();
+        if (!agentId.isEmpty()) {
+            ids = normalizeIdArray(m_settings->getAgentById(agentId).value("skillIds").toArray());
+            if (!ids.isEmpty()) {
+                return ids;
+            }
+        }
+        return {};
+    }
+
+    if (!m_pendingSkillIds.isEmpty()) {
+        return normalizeIdArray(m_pendingSkillIds);
+    }
+
+    const QString agentId = conversationAgentId();
+    if (!agentId.isEmpty()) {
+        return normalizeIdArray(m_settings->getAgentById(agentId).value("skillIds").toArray());
+    }
+    return {};
+}
+
+QJsonArray ChatManager::effectiveMcpServerIds() const {
+    if (!m_currentConversationId.isEmpty()) {
+        const int idx = m_conversationModel->currentIndex();
+        const QJsonObject convSettings = m_conversationModel->getConversationSettings(idx);
+        QJsonArray ids = normalizeIdArray(convSettings.value("mcpServerIds").toArray());
+        if (!ids.isEmpty()) {
+            return ids;
+        }
+
+        const QString agentId = conversationAgentId();
+        if (!agentId.isEmpty()) {
+            ids = normalizeIdArray(m_settings->getAgentById(agentId).value("mcpServerIds").toArray());
+            if (!ids.isEmpty()) {
+                return ids;
+            }
+        }
+        return {};
+    }
+
+    if (!m_pendingMcpServerIds.isEmpty()) {
+        return normalizeIdArray(m_pendingMcpServerIds);
+    }
+
+    const QString agentId = conversationAgentId();
+    if (!agentId.isEmpty()) {
+        return normalizeIdArray(m_settings->getAgentById(agentId).value("mcpServerIds").toArray());
+    }
+    return {};
+}
+
+QJsonArray ChatManager::resolveSkills(const QJsonArray &ids) const {
+    QJsonArray arr;
+    for (const auto &val : normalizeIdArray(ids)) {
+        const QJsonObject skill = m_settings->getSkillById(val.toString());
+        if (!skill.isEmpty()) {
+            arr.append(skill);
+        }
+    }
+    return arr;
+}
+
+QJsonArray ChatManager::resolveMcpServers(const QJsonArray &ids) const {
+    QJsonArray arr;
+    for (const auto &val : normalizeIdArray(ids)) {
+        const QJsonObject server = m_settings->getMcpServerById(val.toString());
+        if (!server.isEmpty()) {
+            arr.append(server);
+        }
+    }
+    return arr;
+}
+
+QString ChatManager::buildCapabilityInstruction(const QJsonArray &skills, const QJsonArray &mcpServers) const {
+    QStringList lines;
+    if (!skills.isEmpty()) {
+        lines << "Enabled skills:";
+        for (const auto &item : skills) {
+            if (!item.isObject()) continue;
+            const QJsonObject obj = item.toObject();
+            const QString name = obj.value("name").toString().trimmed();
+            const QString prompt = obj.value("prompt").toString().trimmed();
+            if (!name.isEmpty()) {
+                lines << QString("- %1").arg(name);
+            }
+            if (!prompt.isEmpty()) {
+                lines << QString("  skill_prompt: %1").arg(prompt);
+            }
+        }
+    }
+    if (!mcpServers.isEmpty()) {
+        lines << "Enabled MCP servers:";
+        for (const auto &item : mcpServers) {
+            if (!item.isObject()) continue;
+            const QJsonObject obj = item.toObject();
+            const QString name = obj.value("name").toString().trimmed();
+            const QString transport = obj.value("transport").toString().trimmed();
+            const QString endpoint = obj.value("url").toString().trimmed();
+            QString line = "- " + (name.isEmpty() ? QString("mcp") : name);
+            if (!transport.isEmpty()) {
+                line += " [" + transport + "]";
+            }
+            if (!endpoint.isEmpty()) {
+                line += " " + endpoint;
+            }
+            lines << line;
+        }
+    }
+    if (lines.isEmpty()) {
+        return {};
+    }
+    return lines.join('\n');
+}
+
 QStringList ChatManager::availableModels() const {
-    auto *provider = m_providers.value(m_settings->currentProvider(), nullptr);
+    auto *provider = m_providers.value(currentProviderName(), nullptr);
     if (provider) return provider->defaultModels();
     return {};
 }
@@ -358,5 +726,233 @@ void ChatManager::clearAttachments() {
     if (!m_attachments.isEmpty()) {
         m_attachments.clear();
         emit attachmentsChanged();
+    }
+}
+
+QStringList ChatManager::providerNames() const {
+    return {"OpenAI", "Claude", "Gemini", "DeepSeek", "Ollama", "Dify", "DeerFlow"};
+}
+
+bool ChatManager::isExternalProvider(const QString &provider) const {
+    return provider == "Dify" || provider == "DeerFlow";
+}
+
+QJsonArray ChatManager::agents() const {
+    return m_settings->agents();
+}
+
+QJsonObject ChatManager::agentById(const QString &id) const {
+    return m_settings->getAgentById(id);
+}
+
+void ChatManager::saveAgent(const QJsonObject &agent) {
+    m_settings->saveAgent(agent);
+    emit agentsChanged();
+    emit conversationCapabilitiesChanged();
+}
+
+void ChatManager::deleteAgent(const QString &id) {
+    m_settings->deleteAgent(id);
+    emit agentsChanged();
+    emit conversationCapabilitiesChanged();
+}
+
+QJsonArray ChatManager::skills() const {
+    return m_settings->skills();
+}
+
+QJsonObject ChatManager::skillById(const QString &id) const {
+    return m_settings->getSkillById(id);
+}
+
+void ChatManager::saveSkill(const QJsonObject &skill) {
+    m_settings->saveSkill(skill);
+    emit skillsChanged();
+    emit conversationCapabilitiesChanged();
+}
+
+void ChatManager::deleteSkill(const QString &id) {
+    m_settings->deleteSkill(id);
+    emit skillsChanged();
+    emit conversationCapabilitiesChanged();
+}
+
+QJsonArray ChatManager::mcpServers() const {
+    return m_settings->mcpServers();
+}
+
+QJsonObject ChatManager::mcpServerById(const QString &id) const {
+    return m_settings->getMcpServerById(id);
+}
+
+void ChatManager::saveMcpServer(const QJsonObject &server) {
+    m_settings->saveMcpServer(server);
+    emit mcpServersChanged();
+    emit conversationCapabilitiesChanged();
+}
+
+void ChatManager::deleteMcpServer(const QString &id) {
+    m_settings->deleteMcpServer(id);
+    emit mcpServersChanged();
+    emit conversationCapabilitiesChanged();
+}
+
+QJsonArray ChatManager::conversationSkillIds() const {
+    return effectiveSkillIds();
+}
+
+QJsonArray ChatManager::conversationMcpServerIds() const {
+    return effectiveMcpServerIds();
+}
+
+void ChatManager::setConversationSkillIds(const QVariantList &ids) {
+    QJsonArray incoming;
+    for (const auto &val : ids) {
+        incoming.append(QJsonValue::fromVariant(val));
+    }
+    const QJsonArray normalized = normalizeIdArray(incoming);
+    m_pendingSkillIds = normalized;
+    if (m_currentConversationId.isEmpty()) {
+        emit conversationCapabilitiesChanged();
+        return;
+    }
+    const int idx = m_conversationModel->currentIndex();
+    if (idx < 0) {
+        return;
+    }
+    m_conversationModel->updateConversationSettings(idx, QJsonObject{{"skillIds", normalized}});
+    m_conversationModel->saveToFile(m_dataFilePath);
+    emit conversationCapabilitiesChanged();
+}
+
+void ChatManager::setConversationMcpServerIds(const QVariantList &ids) {
+    QJsonArray incoming;
+    for (const auto &val : ids) {
+        incoming.append(QJsonValue::fromVariant(val));
+    }
+    const QJsonArray normalized = normalizeIdArray(incoming);
+    m_pendingMcpServerIds = normalized;
+    if (m_currentConversationId.isEmpty()) {
+        emit conversationCapabilitiesChanged();
+        return;
+    }
+    const int idx = m_conversationModel->currentIndex();
+    if (idx < 0) {
+        return;
+    }
+    m_conversationModel->updateConversationSettings(idx, QJsonObject{{"mcpServerIds", normalized}});
+    m_conversationModel->saveToFile(m_dataFilePath);
+    emit conversationCapabilitiesChanged();
+}
+
+QStringList ChatManager::conversationSkillNames() const {
+    QStringList names;
+    for (const auto &val : effectiveSkillIds()) {
+        const QJsonObject obj = m_settings->getSkillById(val.toString());
+        QString name = obj.value("name").toString().trimmed();
+        if (name.isEmpty()) {
+            name = val.toString();
+        }
+        if (!name.isEmpty()) {
+            names.append(name);
+        }
+    }
+    return names;
+}
+
+QStringList ChatManager::conversationMcpServerNames() const {
+    QStringList names;
+    for (const auto &val : effectiveMcpServerIds()) {
+        const QJsonObject obj = m_settings->getMcpServerById(val.toString());
+        QString name = obj.value("name").toString().trimmed();
+        if (name.isEmpty()) {
+            name = val.toString();
+        }
+        if (!name.isEmpty()) {
+            names.append(name);
+        }
+    }
+    return names;
+}
+
+QString ChatManager::conversationAgentId() const {
+    if (!m_currentConversationId.isEmpty()) {
+        return m_conversationModel->getConversationAgentById(m_currentConversationId).trimmed();
+    }
+    return m_pendingAgentId.trimmed();
+}
+
+QString ChatManager::conversationAgentName() const {
+    const QString id = conversationAgentId();
+    if (id.isEmpty()) {
+        return {};
+    }
+    const QJsonObject agent = m_settings->getAgentById(id);
+    const QString name = agent.value("name").toString().trimmed();
+    return name.isEmpty() ? id : name;
+}
+
+void ChatManager::setConversationAgentId(const QString &agentId) {
+    const QString normalizedAgentId = agentId.trimmed();
+    const QString previousAgentId = conversationAgentId();
+    m_pendingAgentId = normalizedAgentId;
+    if (!normalizedAgentId.isEmpty()) {
+        const QJsonObject pendingAgent = m_settings->getAgentById(normalizedAgentId);
+        m_pendingSkillIds = normalizeIdArray(pendingAgent.value("skillIds").toArray());
+        m_pendingMcpServerIds = normalizeIdArray(pendingAgent.value("mcpServerIds").toArray());
+    }
+
+    if (m_currentConversationId.isEmpty()) {
+        if (previousAgentId != normalizedAgentId) {
+            emit conversationAgentChanged();
+            emit conversationCapabilitiesChanged();
+        }
+        return;
+    }
+
+    const int index = m_conversationModel->currentIndex();
+    if (index < 0) {
+        return;
+    }
+
+    const QString oldAgentId = m_conversationModel->getConversationAgentById(m_currentConversationId).trimmed();
+
+    QJsonObject settings;
+    settings["agentId"] = normalizedAgentId;
+    if (!normalizedAgentId.isEmpty()) {
+        const QJsonObject agent = m_settings->getAgentById(normalizedAgentId);
+        const QString provider = agent.value("provider").toString().trimmed();
+        if (!provider.isEmpty()) {
+            settings["provider"] = provider;
+        }
+        settings["skillIds"] = normalizeIdArray(agent.value("skillIds").toArray());
+        settings["mcpServerIds"] = normalizeIdArray(agent.value("mcpServerIds").toArray());
+    } else {
+        settings["skillIds"] = QJsonArray{};
+        settings["mcpServerIds"] = QJsonArray{};
+    }
+    m_conversationModel->updateConversationSettings(index, settings);
+
+    if (oldAgentId != normalizedAgentId) {
+        bool shouldResetRuntime = true;
+        if (oldAgentId.isEmpty() && !normalizedAgentId.isEmpty()) {
+            // Keep runtime when first binding an agent onto an existing external session.
+            shouldResetRuntime = false;
+        }
+
+        const QString providerName = currentProviderName();
+        if (shouldResetRuntime && isExternalProvider(providerName)) {
+            m_conversationModel->updateConversationRuntime(index, QJsonObject{
+                {"conversation_id", ""},
+                {"last_message_id", ""},
+                {"run_id", ""},
+            });
+        }
+    }
+
+    m_conversationModel->saveToFile(m_dataFilePath);
+    if (previousAgentId != normalizedAgentId) {
+        emit conversationAgentChanged();
+        emit conversationCapabilitiesChanged();
     }
 }

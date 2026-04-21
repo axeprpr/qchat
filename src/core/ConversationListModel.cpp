@@ -120,11 +120,14 @@ QJsonObject ConversationListModel::getConversationSettings(int index) const {
     QJsonObject obj;
     obj["title"] = conv.title;
     obj["provider"] = conv.provider;
+    obj["agentId"] = conv.agentId;
     obj["systemPrompt"] = conv.systemPrompt;
     obj["temperature"] = conv.temperature;
     obj["parameters"] = conv.parameters;
     obj["markdownEnabled"] = conv.markdownEnabled;
     obj["historyToolEnabled"] = conv.historyToolEnabled;
+    obj["skillIds"] = conv.skillIds;
+    obj["mcpServerIds"] = conv.mcpServerIds;
     return obj;
 }
 
@@ -133,13 +136,76 @@ void ConversationListModel::updateConversationSettings(int index, const QJsonObj
     Conversation &conv = m_conversations[index];
     if (settings.contains("title")) conv.title = settings["title"].toString();
     if (settings.contains("provider")) conv.provider = settings["provider"].toString();
+    if (settings.contains("agentId")) conv.agentId = settings["agentId"].toString();
     if (settings.contains("systemPrompt")) conv.systemPrompt = settings["systemPrompt"].toString();
     if (settings.contains("temperature")) conv.temperature = settings["temperature"].toDouble();
     if (settings.contains("parameters")) conv.parameters = settings["parameters"].toString();
     if (settings.contains("markdownEnabled")) conv.markdownEnabled = settings["markdownEnabled"].toBool();
     if (settings.contains("historyToolEnabled")) conv.historyToolEnabled = settings["historyToolEnabled"].toBool();
+    if (settings.contains("skillIds")) conv.skillIds = settings["skillIds"].toArray();
+    if (settings.contains("mcpServerIds")) conv.mcpServerIds = settings["mcpServerIds"].toArray();
     QModelIndex idx = this->index(index);
     emit dataChanged(idx, idx);
+}
+
+QJsonObject ConversationListModel::getConversationRuntime(int index) const {
+    if (index < 0 || index >= m_conversations.count()) return {};
+    const Conversation &conv = m_conversations[index];
+    QJsonObject obj;
+    obj["conversation_id"] = conv.externalConversationId;
+    obj["last_message_id"] = conv.externalMessageId;
+    obj["run_id"] = conv.externalRunId;
+    return obj;
+}
+
+void ConversationListModel::updateConversationRuntime(int index, const QJsonObject &runtime) {
+    if (index < 0 || index >= m_conversations.count()) return;
+    Conversation &conv = m_conversations[index];
+    if (runtime.contains("conversation_id")) conv.externalConversationId = runtime["conversation_id"].toString();
+    if (runtime.contains("last_message_id")) conv.externalMessageId = runtime["last_message_id"].toString();
+    if (runtime.contains("run_id")) conv.externalRunId = runtime["run_id"].toString();
+    QModelIndex idx = this->index(index);
+    emit dataChanged(idx, idx);
+}
+
+QString ConversationListModel::getConversationProviderById(const QString &id) const {
+    for (const auto &conv : m_conversations) {
+        if (conv.id == id) {
+            return conv.provider;
+        }
+    }
+    return {};
+}
+
+QString ConversationListModel::getConversationAgentById(const QString &id) const {
+    for (const auto &conv : m_conversations) {
+        if (conv.id == id) {
+            return conv.agentId;
+        }
+    }
+    return {};
+}
+
+QJsonObject ConversationListModel::getConversationRuntimeById(const QString &id) const {
+    for (const auto &conv : m_conversations) {
+        if (conv.id == id) {
+            QJsonObject obj;
+            obj["conversation_id"] = conv.externalConversationId;
+            obj["last_message_id"] = conv.externalMessageId;
+            obj["run_id"] = conv.externalRunId;
+            return obj;
+        }
+    }
+    return {};
+}
+
+void ConversationListModel::updateConversationRuntimeById(const QString &id, const QJsonObject &runtime) {
+    for (int i = 0; i < m_conversations.count(); ++i) {
+        if (m_conversations[i].id == id) {
+            updateConversationRuntime(i, runtime);
+            return;
+        }
+    }
 }
 
 QJsonArray ConversationListModel::getMessages(const QString &id) const {
@@ -160,11 +226,17 @@ void ConversationListModel::saveToFile(const QString &path) {
         obj["model"] = conv.model;
         obj["messages"] = conv.messages;
         obj["provider"] = conv.provider;
+        obj["agentId"] = conv.agentId;
         obj["systemPrompt"] = conv.systemPrompt;
         obj["temperature"] = conv.temperature;
         obj["parameters"] = conv.parameters;
         obj["markdownEnabled"] = conv.markdownEnabled;
         obj["historyToolEnabled"] = conv.historyToolEnabled;
+        obj["skillIds"] = conv.skillIds;
+        obj["mcpServerIds"] = conv.mcpServerIds;
+        obj["externalConversationId"] = conv.externalConversationId;
+        obj["externalMessageId"] = conv.externalMessageId;
+        obj["externalRunId"] = conv.externalRunId;
         arr.append(obj);
     }
 
@@ -194,11 +266,17 @@ void ConversationListModel::loadFromFile(const QString &path) {
         conv.messages = obj["messages"].toArray();
         conv.messageCount = conv.messages.count();
         conv.provider = obj["provider"].toString();
+        conv.agentId = obj["agentId"].toString();
         conv.systemPrompt = obj["systemPrompt"].toString();
         conv.temperature = obj.contains("temperature") ? obj["temperature"].toDouble() : -1.0;
         conv.parameters = obj["parameters"].toString();
         conv.markdownEnabled = obj.contains("markdownEnabled") ? obj["markdownEnabled"].toBool() : true;
         conv.historyToolEnabled = obj.contains("historyToolEnabled") ? obj["historyToolEnabled"].toBool() : true;
+        conv.skillIds = obj.contains("skillIds") && obj["skillIds"].isArray() ? obj["skillIds"].toArray() : QJsonArray{};
+        conv.mcpServerIds = obj.contains("mcpServerIds") && obj["mcpServerIds"].isArray() ? obj["mcpServerIds"].toArray() : QJsonArray{};
+        conv.externalConversationId = obj["externalConversationId"].toString();
+        conv.externalMessageId = obj["externalMessageId"].toString();
+        conv.externalRunId = obj["externalRunId"].toString();
         m_conversations.append(conv);
     }
     endResetModel();

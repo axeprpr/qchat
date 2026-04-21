@@ -170,7 +170,7 @@ FluScrollablePage {
                     Item { height: 8 }
 
                     Repeater {
-                        model: ["OpenAI", "Claude", "Gemini", "DeepSeek", "Ollama"]
+                        model: chatManager.providerNames()
                         delegate: ProviderConfigPanel {
                             Layout.fillWidth: true
                             providerName: modelData

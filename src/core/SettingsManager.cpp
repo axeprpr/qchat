@@ -1,6 +1,7 @@
 #include "SettingsManager.h"
 #include <QDir>
 #include <QJsonDocument>
+#include <QUuid>
 
 SettingsManager::SettingsManager(QObject *parent)
     : QObject(parent)
@@ -8,6 +9,7 @@ SettingsManager::SettingsManager(QObject *parent)
 {
     m_dataPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     QDir().mkpath(m_dataPath);
+    ensureBuiltinData();
 }
 
 QString SettingsManager::theme() const { return m_settings.value("theme", "dark").toString(); }
@@ -106,8 +108,23 @@ QJsonObject SettingsManager::getProviderConfig(const QString &name) const {
     obj["apiKey"] = settings.value("apiKey").toString();
     obj["baseUrl"] = settings.value("baseUrl").toString();
     obj["defaultModel"] = settings.value("defaultModel").toString();
+    obj["extra"] = QJsonObject::fromVariantMap(settings.value("extra").toMap());
     settings.endGroup();
     return obj;
+}
+
+void SettingsManager::saveProviderExtra(const QString &name, const QJsonObject &extra) {
+    m_settings.beginGroup("providers/" + name);
+    m_settings.setValue("extra", extra.toVariantMap());
+    m_settings.endGroup();
+}
+
+QJsonObject SettingsManager::getProviderExtra(const QString &name) const {
+    QSettings &settings = const_cast<QSettings &>(m_settings);
+    settings.beginGroup("providers/" + name);
+    QJsonObject extra = QJsonObject::fromVariantMap(settings.value("extra").toMap());
+    settings.endGroup();
+    return extra;
 }
 
 QStringList SettingsManager::providerNames() const {
@@ -120,6 +137,327 @@ QStringList SettingsManager::providerNames() const {
 
 void SettingsManager::removeProvider(const QString &name) {
     m_settings.remove("providers/" + name);
+}
+
+QJsonArray SettingsManager::loadAgentsInternal() const {
+    return loadCollection("agents");
+}
+
+void SettingsManager::saveAgentsInternal(const QJsonArray &agents) {
+    saveCollection("agents", agents);
+}
+
+QJsonArray SettingsManager::loadCollection(const QString &key) const {
+    const QByteArray raw = m_settings.value(key, "[]").toByteArray();
+    const QJsonDocument doc = QJsonDocument::fromJson(raw);
+    return doc.isArray() ? doc.array() : QJsonArray{};
+}
+
+void SettingsManager::saveCollection(const QString &key, const QJsonArray &list) {
+    m_settings.setValue(key, QJsonDocument(list).toJson(QJsonDocument::Compact));
+}
+
+void SettingsManager::ensureBuiltinData() {
+    QJsonArray list = loadAgentsInternal();
+    bool hasMeetingAssistant = false;
+    for (const auto &item : list) {
+        if (!item.isObject()) continue;
+        if (item.toObject().value("id").toString() == "builtin-meeting-minutes") {
+            hasMeetingAssistant = true;
+            break;
+        }
+    }
+
+    if (!hasMeetingAssistant) {
+        QJsonObject agent;
+        agent["id"] = "builtin-meeting-minutes";
+        agent["name"] = "会议纪要助手";
+        agent["provider"] = "Dify";
+        agent["baseUrl"] = "";
+        agent["apiKey"] = "";
+        agent["readonly"] = true;
+        agent["builtin"] = true;
+        agent["description"] = "预置会议纪要智能体，可配置为 Dify 或 DeerFlow 后端。";
+        agent["skillIds"] = QJsonArray{QJsonValue(QStringLiteral("builtin-deep-research"))};
+        agent["mcpServerIds"] = QJsonArray{};
+        list.append(agent);
+        saveAgentsInternal(list);
+    }
+
+    QJsonArray skillList = loadCollection("skills");
+    bool hasDeepResearchSkill = false;
+    for (const auto &item : skillList) {
+        if (!item.isObject()) continue;
+        if (item.toObject().value("id").toString() == "builtin-deep-research") {
+            hasDeepResearchSkill = true;
+            break;
+        }
+    }
+    if (!hasDeepResearchSkill) {
+        QJsonObject skill;
+        skill["id"] = "builtin-deep-research";
+        skill["name"] = "深度调研";
+        skill["description"] = "分步规划、交叉验证、最后给出结论和证据。";
+        skill["prompt"] = "你处于深度调研模式。先给出调研计划，再执行与验证，最后输出结论、依据、风险与后续建议。";
+        skill["readonly"] = true;
+        skill["builtin"] = true;
+        skillList.append(skill);
+        saveCollection("skills", skillList);
+    }
+
+    QJsonArray mcpList = loadCollection("mcpServers");
+    bool hasDefaultMcp = false;
+    for (const auto &item : mcpList) {
+        if (!item.isObject()) continue;
+        if (item.toObject().value("id").toString() == "builtin-default-mcp") {
+            hasDefaultMcp = true;
+            break;
+        }
+    }
+    if (!hasDefaultMcp) {
+        QJsonObject mcp;
+        mcp["id"] = "builtin-default-mcp";
+        mcp["name"] = "默认MCP";
+        mcp["transport"] = "sse";
+        mcp["url"] = "";
+        mcp["command"] = "";
+        mcp["args"] = "";
+        mcp["envJson"] = "{}";
+        mcp["description"] = "示例 MCP 配置，请按实际服务地址修改。";
+        mcp["enabled"] = true;
+        mcp["readonly"] = false;
+        mcp["builtin"] = true;
+        mcpList.append(mcp);
+        saveCollection("mcpServers", mcpList);
+    }
+}
+
+QJsonArray SettingsManager::agents() const {
+    return loadAgentsInternal();
+}
+
+QJsonObject SettingsManager::getAgentById(const QString &id) const {
+    if (id.trimmed().isEmpty()) {
+        return {};
+    }
+    const QJsonArray list = loadAgentsInternal();
+    for (const auto &item : list) {
+        if (!item.isObject()) continue;
+        const QJsonObject obj = item.toObject();
+        if (obj.value("id").toString() == id) {
+            return obj;
+        }
+    }
+    return {};
+}
+
+void SettingsManager::saveAgent(const QJsonObject &agent) {
+    QJsonObject normalized = agent;
+    QString id = normalized.value("id").toString().trimmed();
+    if (id.isEmpty()) {
+        id = QUuid::createUuid().toString(QUuid::WithoutBraces);
+        normalized["id"] = id;
+    }
+    if (normalized.value("name").toString().trimmed().isEmpty()) {
+        normalized["name"] = "New Agent";
+    }
+    if (normalized.value("provider").toString().trimmed().isEmpty()) {
+        normalized["provider"] = "Dify";
+    }
+    if (!normalized.contains("skillIds") || !normalized.value("skillIds").isArray()) {
+        normalized["skillIds"] = QJsonArray{};
+    }
+    if (!normalized.contains("mcpServerIds") || !normalized.value("mcpServerIds").isArray()) {
+        normalized["mcpServerIds"] = QJsonArray{};
+    }
+
+    QJsonArray list = loadAgentsInternal();
+    bool replaced = false;
+    for (int i = 0; i < list.size(); ++i) {
+        if (!list.at(i).isObject()) continue;
+        QJsonObject current = list.at(i).toObject();
+        if (current.value("id").toString() == id) {
+            if (current.value("readonly").toBool()) {
+                normalized["readonly"] = true;
+                normalized["builtin"] = current.value("builtin").toBool();
+            }
+            list[i] = normalized;
+            replaced = true;
+            break;
+        }
+    }
+    if (!replaced) {
+        list.append(normalized);
+    }
+    saveAgentsInternal(list);
+}
+
+void SettingsManager::deleteAgent(const QString &id) {
+    if (id.trimmed().isEmpty()) {
+        return;
+    }
+    QJsonArray list = loadAgentsInternal();
+    for (int i = 0; i < list.size(); ++i) {
+        if (!list.at(i).isObject()) continue;
+        const QJsonObject obj = list.at(i).toObject();
+        if (obj.value("id").toString() == id) {
+            if (obj.value("readonly").toBool()) {
+                return;
+            }
+            list.removeAt(i);
+            break;
+        }
+    }
+    saveAgentsInternal(list);
+}
+
+QJsonArray SettingsManager::skills() const {
+    return loadCollection("skills");
+}
+
+QJsonObject SettingsManager::getSkillById(const QString &id) const {
+    if (id.trimmed().isEmpty()) {
+        return {};
+    }
+    const QJsonArray list = loadCollection("skills");
+    for (const auto &item : list) {
+        if (!item.isObject()) continue;
+        const QJsonObject obj = item.toObject();
+        if (obj.value("id").toString() == id) {
+            return obj;
+        }
+    }
+    return {};
+}
+
+void SettingsManager::saveSkill(const QJsonObject &skill) {
+    QJsonObject normalized = skill;
+    QString id = normalized.value("id").toString().trimmed();
+    if (id.isEmpty()) {
+        id = QUuid::createUuid().toString(QUuid::WithoutBraces);
+        normalized["id"] = id;
+    }
+    if (normalized.value("name").toString().trimmed().isEmpty()) {
+        normalized["name"] = "New Skill";
+    }
+    if (!normalized.contains("prompt")) {
+        normalized["prompt"] = "";
+    }
+
+    QJsonArray list = loadCollection("skills");
+    bool replaced = false;
+    for (int i = 0; i < list.size(); ++i) {
+        if (!list.at(i).isObject()) continue;
+        QJsonObject current = list.at(i).toObject();
+        if (current.value("id").toString() == id) {
+            if (current.value("readonly").toBool()) {
+                normalized["readonly"] = true;
+                normalized["builtin"] = current.value("builtin").toBool();
+            }
+            list[i] = normalized;
+            replaced = true;
+            break;
+        }
+    }
+    if (!replaced) {
+        list.append(normalized);
+    }
+    saveCollection("skills", list);
+}
+
+void SettingsManager::deleteSkill(const QString &id) {
+    if (id.trimmed().isEmpty()) {
+        return;
+    }
+    QJsonArray list = loadCollection("skills");
+    for (int i = 0; i < list.size(); ++i) {
+        if (!list.at(i).isObject()) continue;
+        const QJsonObject obj = list.at(i).toObject();
+        if (obj.value("id").toString() == id) {
+            if (obj.value("readonly").toBool()) {
+                return;
+            }
+            list.removeAt(i);
+            break;
+        }
+    }
+    saveCollection("skills", list);
+}
+
+QJsonArray SettingsManager::mcpServers() const {
+    return loadCollection("mcpServers");
+}
+
+QJsonObject SettingsManager::getMcpServerById(const QString &id) const {
+    if (id.trimmed().isEmpty()) {
+        return {};
+    }
+    const QJsonArray list = loadCollection("mcpServers");
+    for (const auto &item : list) {
+        if (!item.isObject()) continue;
+        const QJsonObject obj = item.toObject();
+        if (obj.value("id").toString() == id) {
+            return obj;
+        }
+    }
+    return {};
+}
+
+void SettingsManager::saveMcpServer(const QJsonObject &server) {
+    QJsonObject normalized = server;
+    QString id = normalized.value("id").toString().trimmed();
+    if (id.isEmpty()) {
+        id = QUuid::createUuid().toString(QUuid::WithoutBraces);
+        normalized["id"] = id;
+    }
+    if (normalized.value("name").toString().trimmed().isEmpty()) {
+        normalized["name"] = "New MCP";
+    }
+    if (normalized.value("transport").toString().trimmed().isEmpty()) {
+        normalized["transport"] = "sse";
+    }
+    if (!normalized.contains("enabled")) {
+        normalized["enabled"] = true;
+    }
+
+    QJsonArray list = loadCollection("mcpServers");
+    bool replaced = false;
+    for (int i = 0; i < list.size(); ++i) {
+        if (!list.at(i).isObject()) continue;
+        QJsonObject current = list.at(i).toObject();
+        if (current.value("id").toString() == id) {
+            if (current.value("readonly").toBool()) {
+                normalized["readonly"] = true;
+                normalized["builtin"] = current.value("builtin").toBool();
+            }
+            list[i] = normalized;
+            replaced = true;
+            break;
+        }
+    }
+    if (!replaced) {
+        list.append(normalized);
+    }
+    saveCollection("mcpServers", list);
+}
+
+void SettingsManager::deleteMcpServer(const QString &id) {
+    if (id.trimmed().isEmpty()) {
+        return;
+    }
+    QJsonArray list = loadCollection("mcpServers");
+    for (int i = 0; i < list.size(); ++i) {
+        if (!list.at(i).isObject()) continue;
+        const QJsonObject obj = list.at(i).toObject();
+        if (obj.value("id").toString() == id) {
+            if (obj.value("readonly").toBool()) {
+                return;
+            }
+            list.removeAt(i);
+            break;
+        }
+    }
+    saveCollection("mcpServers", list);
 }
 
 QString SettingsManager::dataPath() const { return m_dataPath; }

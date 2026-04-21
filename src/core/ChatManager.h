@@ -2,6 +2,9 @@
 
 #include <QObject>
 #include <QMap>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QVariant>
 #include "MessageModel.h"
 #include "ConversationListModel.h"
 #include "ModelProvider.h"
@@ -57,6 +60,7 @@ public:
     Q_INVOKABLE void sendMessage(const QString &content, const QStringList &attachments = {});
     Q_INVOKABLE void stopGeneration();
     Q_INVOKABLE void newConversation();
+    Q_INVOKABLE void newConversationWithOptions(const QString &title, const QString &provider, bool newAgentSession = true);
     Q_INVOKABLE void switchConversation(int index);
     Q_INVOKABLE void deleteConversation(int index);
     Q_INVOKABLE void clearCurrentConversation();
@@ -67,6 +71,29 @@ public:
     Q_INVOKABLE void addImageAttachment(const QString &path);
     Q_INVOKABLE void removeAttachment(int index);
     Q_INVOKABLE void clearAttachments();
+    Q_INVOKABLE QStringList providerNames() const;
+    Q_INVOKABLE bool isExternalProvider(const QString &provider) const;
+    Q_INVOKABLE QJsonArray agents() const;
+    Q_INVOKABLE QJsonObject agentById(const QString &id) const;
+    Q_INVOKABLE void saveAgent(const QJsonObject &agent);
+    Q_INVOKABLE void deleteAgent(const QString &id);
+    Q_INVOKABLE QString conversationAgentId() const;
+    Q_INVOKABLE QString conversationAgentName() const;
+    Q_INVOKABLE void setConversationAgentId(const QString &agentId);
+    Q_INVOKABLE QJsonArray skills() const;
+    Q_INVOKABLE QJsonObject skillById(const QString &id) const;
+    Q_INVOKABLE void saveSkill(const QJsonObject &skill);
+    Q_INVOKABLE void deleteSkill(const QString &id);
+    Q_INVOKABLE QJsonArray mcpServers() const;
+    Q_INVOKABLE QJsonObject mcpServerById(const QString &id) const;
+    Q_INVOKABLE void saveMcpServer(const QJsonObject &server);
+    Q_INVOKABLE void deleteMcpServer(const QString &id);
+    Q_INVOKABLE QJsonArray conversationSkillIds() const;
+    Q_INVOKABLE QJsonArray conversationMcpServerIds() const;
+    Q_INVOKABLE void setConversationSkillIds(const QVariantList &ids);
+    Q_INVOKABLE void setConversationMcpServerIds(const QVariantList &ids);
+    Q_INVOKABLE QStringList conversationSkillNames() const;
+    Q_INVOKABLE QStringList conversationMcpServerNames() const;
 
 signals:
     void isGeneratingChanged();
@@ -74,6 +101,11 @@ signals:
     void chatModeChanged();
     void deepResearchChanged();
     void attachmentsChanged();
+    void agentsChanged();
+    void conversationAgentChanged();
+    void skillsChanged();
+    void mcpServersChanged();
+    void conversationCapabilitiesChanged();
     void error(const QString &message);
 
 private slots:
@@ -81,14 +113,22 @@ private slots:
     void onThinkingChunk(const QString &text);
     void onResponseFinished(const QString &response, const QString &thinking);
     void onProviderError(const QString &errorMsg);
+    void onProviderSessionUpdated(const QJsonObject &session);
 
 private:
     void initProviders();
     ModelProvider* currentProvider();
+    QString currentProviderName() const;
     void disconnectProvider();
     void saveCurrentConversation();
     void loadConversations();
     QString buildDocumentContext(const QStringList &attachments);
+    QJsonArray normalizeIdArray(const QJsonArray &ids) const;
+    QJsonArray effectiveSkillIds() const;
+    QJsonArray effectiveMcpServerIds() const;
+    QJsonArray resolveSkills(const QJsonArray &ids) const;
+    QJsonArray resolveMcpServers(const QJsonArray &ids) const;
+    QString buildCapabilityInstruction(const QJsonArray &skills, const QJsonArray &mcpServers) const;
 
     MessageModel *m_messageModel;
     ConversationListModel *m_conversationModel;
@@ -102,10 +142,14 @@ private:
     ImageGenProvider *m_imageGen;
 
     QMap<QString, ModelProvider*> m_providers;
+    ModelProvider *m_activeProvider = nullptr;
     bool m_isGenerating = false;
     QString m_currentConversationId;
     QString m_dataFilePath;
     QString m_chatMode = "quick";
     bool m_deepResearch = false;
     QStringList m_attachments;
+    QString m_pendingAgentId;
+    QJsonArray m_pendingSkillIds;
+    QJsonArray m_pendingMcpServerIds;
 };

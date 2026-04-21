@@ -74,8 +74,22 @@ public:
     Q_INVOKABLE void saveProviderConfig(const QString &name, const QString &apiKey,
                                          const QString &baseUrl, const QString &defaultModel);
     Q_INVOKABLE QJsonObject getProviderConfig(const QString &name) const;
+    Q_INVOKABLE void saveProviderExtra(const QString &name, const QJsonObject &extra);
+    Q_INVOKABLE QJsonObject getProviderExtra(const QString &name) const;
     Q_INVOKABLE QStringList providerNames() const;
     Q_INVOKABLE void removeProvider(const QString &name);
+    Q_INVOKABLE QJsonArray agents() const;
+    Q_INVOKABLE QJsonObject getAgentById(const QString &id) const;
+    Q_INVOKABLE void saveAgent(const QJsonObject &agent);
+    Q_INVOKABLE void deleteAgent(const QString &id);
+    Q_INVOKABLE QJsonArray skills() const;
+    Q_INVOKABLE QJsonObject getSkillById(const QString &id) const;
+    Q_INVOKABLE void saveSkill(const QJsonObject &skill);
+    Q_INVOKABLE void deleteSkill(const QString &id);
+    Q_INVOKABLE QJsonArray mcpServers() const;
+    Q_INVOKABLE QJsonObject getMcpServerById(const QString &id) const;
+    Q_INVOKABLE void saveMcpServer(const QJsonObject &server);
+    Q_INVOKABLE void deleteMcpServer(const QString &id);
 
     QString dataPath() const;
 
@@ -98,6 +112,12 @@ signals:
     void markdownRenderingChanged();
 
 private:
+    QJsonArray loadCollection(const QString &key) const;
+    void saveCollection(const QString &key, const QJsonArray &list);
+    QJsonArray loadAgentsInternal() const;
+    void saveAgentsInternal(const QJsonArray &agents);
+    void ensureBuiltinData();
+
     QSettings m_settings;
     QString m_dataPath;
 };

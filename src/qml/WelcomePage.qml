@@ -48,7 +48,7 @@ FluPage {
 
             Repeater {
                 model: [
-                    { icon: FluentIcons.Chat,       title: "Multi-Provider",  desc: "OpenAI, Claude, Gemini, DeepSeek & more" },
+                    { icon: FluentIcons.ChatBubbles,       title: "Multi-Provider",  desc: "OpenAI, Claude, Gemini, DeepSeek & more" },
                     { icon: FluentIcons.Processing,  title: "Deep Thinking",   desc: "Extended reasoning with thinking blocks" },
                     { icon: FluentIcons.Document,    title: "File Attachments",desc: "Attach documents, code, and images" },
                     { icon: FluentIcons.Phone,       title: "Voice Chat",      desc: "STT & TTS powered voice conversations" },
@@ -90,7 +90,6 @@ FluPage {
         FluFilledButton {
             Layout.alignment: Qt.AlignHCenter
             text: "Start New Chat"
-            iconSource: FluentIcons.Add
             onClicked: chatManager.newConversation()
         }
     }

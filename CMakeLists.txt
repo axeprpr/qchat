@@ -63,6 +63,8 @@ set(CPP_SOURCES
     src/core/ClaudeProvider.cpp
     src/core/OllamaProvider.h
     src/core/OllamaProvider.cpp
+    src/core/ExternalAgentProvider.h
+    src/core/ExternalAgentProvider.cpp
     src/core/SettingsManager.h
     src/core/SettingsManager.cpp
     src/core/DocumentParser.h
@@ -94,8 +96,12 @@ set(QML_FILES
     src/qml/WelcomePage.qml
     src/qml/CallsPage.qml
     src/qml/SettingsPage.qml
+    src/qml/AgentsPage.qml
+    src/qml/SkillsPage.qml
+    src/qml/McpPage.qml
     src/qml/ConversationSettings.qml
     src/qml/ProviderConfigPanel.qml
+    src/qml/NewConversationDialog.qml
     src/qml/ToolSettingsDialog.qml
     src/qml/PromptLibraryDialog.qml
     src/qml/ImageGenPage.qml
@@ -109,6 +115,7 @@ set(RESOURCE_FILES
 # Executable
 # ============================================================================
 qt_add_executable(${PROJECT_NAME} ${CPP_SOURCES} ${RESOURCE_FILES})
+set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "qchat")
 
 qt_add_qml_module(${PROJECT_NAME}
     URI QChat
@@ -122,8 +129,12 @@ qt_add_qml_module(${PROJECT_NAME}
         src/qml/WelcomePage.qml
         src/qml/CallsPage.qml
         src/qml/SettingsPage.qml
+        src/qml/AgentsPage.qml
+        src/qml/SkillsPage.qml
+        src/qml/McpPage.qml
         src/qml/ConversationSettings.qml
         src/qml/ProviderConfigPanel.qml
+        src/qml/NewConversationDialog.qml
         src/qml/ToolSettingsDialog.qml
         src/qml/PromptLibraryDialog.qml
         src/qml/ImageGenPage.qml

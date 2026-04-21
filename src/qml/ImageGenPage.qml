@@ -78,7 +78,6 @@ FluScrollablePage {
 
                     FluFilledButton {
                         text: chatManager.imageGen.isGenerating ? "Cancel" : "Generate"
-                        iconSource: chatManager.imageGen.isGenerating ? FluentIcons.Stop : FluentIcons.Processing
                         enabled: promptInput.text.trim().length > 0 || chatManager.imageGen.isGenerating
                         onClicked: {
                             if (chatManager.imageGen.isGenerating) {
@@ -181,7 +180,7 @@ FluScrollablePage {
 
                     FluButton {
                         text: "Use as Reference"
-                        iconSource: FluentIcons.Chat
+                        iconSource: FluentIcons.ChatBubbles
                         onClicked: {
                             // Download and add to chat attachments
                             imageDownloader.download(generatedImage.source.toString())

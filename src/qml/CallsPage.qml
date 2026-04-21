@@ -79,7 +79,6 @@ FluScrollablePage {
                 // Record button
                 FluFilledButton {
                     text: isListening ? "Stop Recording" : "Start Recording"
-                    iconSource: isListening ? FluentIcons.Stop : FluentIcons.Microphone
                     onClicked: {
                         if (isListening) {
                             isListening = false

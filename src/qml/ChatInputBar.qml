@@ -9,6 +9,73 @@ Rectangle {
     width: parent.width
     height: inputColumn.implicitHeight + 16
     color: FluTheme.dark ? "#1f1f1f" : "#f9f9f9"
+    property var agentList: []
+    property var agentNames: ["No Agent"]
+    property var agentIds: [""]
+    property var skillIds: [""]
+    property var skillNames: ["Skills: None"]
+    property var mcpIds: [""]
+    property var mcpNames: ["MCP: None"]
+    property bool syncingAgentCombo: false
+    property bool syncingCapabilityCombo: false
+
+    function reloadAgents() {
+        syncingAgentCombo = true
+        agentList = chatManager.agents()
+        agentNames = ["No Agent"]
+        agentIds = [""]
+        for (var i = 0; i < agentList.length; i++) {
+            var item = agentList[i]
+            if (!item || !item.id)
+                continue
+            agentNames.push(item.name || item.id)
+            agentIds.push(item.id)
+        }
+
+        agentCombo.model = agentNames
+        var currentAgentId = chatManager.conversationAgentId()
+        var idx = agentIds.indexOf(currentAgentId || "")
+        agentCombo.currentIndex = idx >= 0 ? idx : 0
+        syncingAgentCombo = false
+    }
+
+    function reloadCapabilities() {
+        syncingCapabilityCombo = true
+
+        var skills = chatManager.skills()
+        skillIds = [""]
+        skillNames = ["Skills: None"]
+        for (var i = 0; i < skills.length; i++) {
+            var skill = skills[i]
+            if (!skill || !skill.id)
+                continue
+            skillIds.push(skill.id)
+            skillNames.push(skill.name || skill.id)
+        }
+        skillCombo.model = skillNames
+        var selectedSkillIds = chatManager.conversationSkillIds()
+        var selectedSkill = (selectedSkillIds && selectedSkillIds.length > 0) ? selectedSkillIds[0] : ""
+        var skillIdx = skillIds.indexOf(selectedSkill)
+        skillCombo.currentIndex = skillIdx >= 0 ? skillIdx : 0
+
+        var mcps = chatManager.mcpServers()
+        mcpIds = [""]
+        mcpNames = ["MCP: None"]
+        for (var j = 0; j < mcps.length; j++) {
+            var mcp = mcps[j]
+            if (!mcp || !mcp.id)
+                continue
+            mcpIds.push(mcp.id)
+            mcpNames.push(mcp.name || mcp.id)
+        }
+        mcpCombo.model = mcpNames
+        var selectedMcpIds = chatManager.conversationMcpServerIds()
+        var selectedMcp = (selectedMcpIds && selectedMcpIds.length > 0) ? selectedMcpIds[0] : ""
+        var mcpIdx = mcpIds.indexOf(selectedMcp)
+        mcpCombo.currentIndex = mcpIdx >= 0 ? mcpIdx : 0
+
+        syncingCapabilityCombo = false
+    }
 
     Rectangle {
         anchors.top: parent.top
@@ -117,6 +184,50 @@ Rectangle {
 
             // Mode selector
             FluComboBox {
+                id: agentCombo
+                implicitWidth: 150
+                model: ["No Agent"]
+                onCurrentIndexChanged: {
+                    if (syncingAgentCombo)
+                        return
+                    if (currentIndex < 0 || currentIndex >= agentIds.length)
+                        return
+                    chatManager.setConversationAgentId(agentIds[currentIndex] || "")
+                }
+            }
+
+            FluComboBox {
+                id: skillCombo
+                implicitWidth: 130
+                model: ["Skills: None"]
+                onCurrentIndexChanged: {
+                    if (syncingCapabilityCombo)
+                        return
+                    if (currentIndex < 0 || currentIndex >= skillIds.length)
+                        return
+                    var selectedId = skillIds[currentIndex] || ""
+                    var payload = selectedId === "" ? [] : [selectedId]
+                    chatManager.setConversationSkillIds(payload)
+                }
+            }
+
+            FluComboBox {
+                id: mcpCombo
+                implicitWidth: 130
+                model: ["MCP: None"]
+                onCurrentIndexChanged: {
+                    if (syncingCapabilityCombo)
+                        return
+                    if (currentIndex < 0 || currentIndex >= mcpIds.length)
+                        return
+                    var selectedId = mcpIds[currentIndex] || ""
+                    var payload = selectedId === "" ? [] : [selectedId]
+                    chatManager.setConversationMcpServerIds(payload)
+                }
+            }
+
+            // Mode selector
+            FluComboBox {
                 id: modeCombo
                 model: ["Quick", "Think", "Expert"]
                 currentIndex: {
@@ -175,7 +286,6 @@ Rectangle {
             // Send / Stop button
             FluFilledButton {
                 text: chatManager.isGenerating ? "Stop" : "Send"
-                iconSource: chatManager.isGenerating ? FluentIcons.Stop : FluentIcons.Send
                 onClicked: {
                     if (chatManager.isGenerating) {
                         chatManager.stopGeneration()
@@ -243,6 +353,47 @@ Rectangle {
                 inputArea.text = selectedContent
                 selectedContent = ""
             }
+        }
+    }
+
+    Component.onCompleted: {
+        reloadAgents()
+        reloadCapabilities()
+    }
+
+    Connections {
+        target: chatManager.conversationModel
+        function onCurrentIndexChanged() {
+            reloadAgents()
+            reloadCapabilities()
+        }
+        function onCountChanged() {
+            reloadAgents()
+            reloadCapabilities()
+        }
+        function onDataChanged() {
+            reloadAgents()
+            reloadCapabilities()
+        }
+    }
+
+    Connections {
+        target: chatManager
+        function onAgentsChanged() {
+            reloadAgents()
+        }
+        function onConversationAgentChanged() {
+            reloadAgents()
+            reloadCapabilities()
+        }
+        function onSkillsChanged() {
+            reloadCapabilities()
+        }
+        function onMcpServersChanged() {
+            reloadCapabilities()
+        }
+        function onConversationCapabilitiesChanged() {
+            reloadCapabilities()
         }
     }
 }

@@ -23,7 +23,7 @@ FluWindow {
         z: 7
     }
 
-    Shortcut { sequence: "Ctrl+N"; onActivated: chatManager.newConversation() }
+    Shortcut { sequence: "Ctrl+N"; onActivated: newConversationDialog.open() }
 
     FluNavigationView {
         id: nav
@@ -31,12 +31,7 @@ FluWindow {
         pageMode: FluNavigationViewType.NoStack
         displayMode: FluNavigationViewType.Open
 
-        logo: Image {
-            source: "qrc:/icons/logo.svg"
-            width: 28
-            height: 28
-            sourceSize: Qt.size(28, 28)
-        }
+        logo: "qrc:/icons/logo.svg"
 
         title: "QChat"
 
@@ -44,26 +39,25 @@ FluWindow {
             nav.setCurrentIndex(0)
         }
 
-        items: ObjectModel {
-            FluPaneItemHeader { title: "Chats" }
-
+        items: FluObject {
             FluPaneItem {
                 id: newChatItem
                 title: "New Chat"
                 icon: FluentIcons.Add
-                onTap: {
-                    chatManager.newConversation()
+                onTapListener: function() {
+                    newConversationDialog.open()
                 }
             }
 
             FluPaneItemSeparator {}
 
             Repeater {
+                visible: false
                 model: chatManager.conversationModel
                 delegate: FluPaneItem {
                     title: model.title || "New Chat"
-                    icon: FluentIcons.Chat
-                    onTap: {
+                    icon: FluentIcons.ChatBubbles
+                    onTapListener: function() {
                         chatManager.switchConversation(index)
                         nav.push("qrc:/qt/qml/QChat/src/qml/ChatPage.qml")
                     }
@@ -75,25 +69,49 @@ FluWindow {
             FluPaneItem {
                 title: "Calls"
                 icon: FluentIcons.Phone
-                onTap: {
+                onTapListener: function() {
                     nav.push("qrc:/qt/qml/QChat/src/qml/CallsPage.qml")
+                }
+            }
+
+            FluPaneItem {
+                title: "Agents"
+                icon: FluentIcons.ChatBubbles
+                onTapListener: function() {
+                    nav.push("qrc:/qt/qml/QChat/src/qml/AgentsPage.qml")
+                }
+            }
+
+            FluPaneItem {
+                title: "Skills"
+                icon: FluentIcons.Library
+                onTapListener: function() {
+                    nav.push("qrc:/qt/qml/QChat/src/qml/SkillsPage.qml")
+                }
+            }
+
+            FluPaneItem {
+                title: "MCP"
+                icon: FluentIcons.Document
+                onTapListener: function() {
+                    nav.push("qrc:/qt/qml/QChat/src/qml/McpPage.qml")
                 }
             }
 
             FluPaneItem {
                 title: "Image Gen"
                 icon: FluentIcons.Photo
-                onTap: {
+                onTapListener: function() {
                     nav.push("qrc:/qt/qml/QChat/src/qml/ImageGenPage.qml")
                 }
             }
         }
 
-        footerItems: ObjectModel {
+        footerItems: FluObject {
             FluPaneItem {
                 title: "Settings"
                 icon: FluentIcons.Settings
-                onTap: {
+                onTapListener: function() {
                     nav.push("qrc:/qt/qml/QChat/src/qml/SettingsPage.qml")
                 }
             }
@@ -106,10 +124,18 @@ FluWindow {
             Loader {
                 id: pageLoader
                 anchors.fill: parent
-                source: chatManager.messageModel.count > 0
+                source: (chatManager.messageModel.count > 0
+                    || chatManager.currentConversationId.length > 0)
                     ? "qrc:/qt/qml/QChat/src/qml/ChatPage.qml"
                     : "qrc:/qt/qml/QChat/src/qml/WelcomePage.qml"
             }
+        }
+    }
+
+    NewConversationDialog {
+        id: newConversationDialog
+        onConversationCreated: {
+            nav.push("qrc:/qt/qml/QChat/src/qml/ChatPage.qml")
         }
     }
 

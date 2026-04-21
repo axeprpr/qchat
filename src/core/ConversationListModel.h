@@ -31,11 +31,17 @@ public:
         QJsonArray messages;
         // Per-conversation settings
         QString provider;
+        QString agentId;
         QString systemPrompt;
         double temperature = -1.0; // -1 means use global
         QString parameters;
         bool markdownEnabled = true;
         bool historyToolEnabled = true;
+        QJsonArray skillIds;
+        QJsonArray mcpServerIds;
+        QString externalConversationId;
+        QString externalMessageId;
+        QString externalRunId;
     };
 
     explicit ConversationListModel(QObject *parent = nullptr);
@@ -54,8 +60,14 @@ public:
                                          const QString &lastMsg, const QString &model);
     Q_INVOKABLE QJsonObject getConversationSettings(int index) const;
     Q_INVOKABLE void updateConversationSettings(int index, const QJsonObject &settings);
+    Q_INVOKABLE QJsonObject getConversationRuntime(int index) const;
+    Q_INVOKABLE void updateConversationRuntime(int index, const QJsonObject &runtime);
 
     QJsonArray getMessages(const QString &id) const;
+    QString getConversationProviderById(const QString &id) const;
+    QString getConversationAgentById(const QString &id) const;
+    QJsonObject getConversationRuntimeById(const QString &id) const;
+    void updateConversationRuntimeById(const QString &id, const QJsonObject &runtime);
     void saveToFile(const QString &path);
     void loadFromFile(const QString &path);
 

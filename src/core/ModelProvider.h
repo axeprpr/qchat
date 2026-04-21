@@ -19,6 +19,7 @@ struct ProviderConfig {
     QString apiKey;
     QString baseUrl;
     QString defaultModel;
+    QJsonObject extra;
     bool supportsStreaming = true;
     bool supportsVision = false;
     bool supportsThinking = false;
@@ -41,6 +42,7 @@ public:
     virtual QStringList defaultModels() const = 0;
     virtual bool supportsThinking() const { return false; }
     virtual bool supportsVision() const { return false; }
+    virtual void setConversationContext(const QJsonObject &context) { Q_UNUSED(context) }
 
     void setConfig(const ProviderConfig &config) { m_config = config; }
     ProviderConfig config() const { return m_config; }
@@ -51,6 +53,7 @@ signals:
     void responseFinished(const QString &fullResponse, const QString &thinkingContent);
     void errorOccurred(const QString &error);
     void modelsLoaded(const QStringList &models);
+    void sessionUpdated(const QJsonObject &session);
 
 protected:
     ProviderConfig m_config;

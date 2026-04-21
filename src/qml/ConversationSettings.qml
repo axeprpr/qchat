@@ -7,12 +7,50 @@ FluContentDialog {
     id: root
     property int conversationIndex: -1
     property var convSettings: ({})
+    property var providers: chatManager.providerNames()
+    property var agentList: []
+    property var agentIds: [""]
+    property var agentNames: ["No Agent"]
+    property var skillsData: []
+    property var mcpData: []
+    property var selectedSkillIds: []
+    property var selectedMcpServerIds: []
+
+    function toggleId(list, id, enabled) {
+        var next = list ? list.slice(0) : []
+        var idx = next.indexOf(id)
+        if (enabled && idx < 0)
+            next.push(id)
+        if (!enabled && idx >= 0)
+            next.splice(idx, 1)
+        return next
+    }
+
+    function reloadAgents() {
+        agentList = chatManager.agents()
+        agentIds = [""]
+        agentNames = ["No Agent"]
+        for (var i = 0; i < agentList.length; i++) {
+            var item = agentList[i]
+            if (!item || !item.id)
+                continue
+            agentIds.push(item.id)
+            agentNames.push(item.name || item.id)
+        }
+    }
+
+    function reloadCapabilities() {
+        skillsData = chatManager.skills()
+        mcpData = chatManager.mcpServers()
+    }
 
     title: "Conversation Settings"
     positiveText: "Save"
     negativeText: "Cancel"
 
     onOpened: {
+        reloadAgents()
+        reloadCapabilities()
         if (conversationIndex >= 0) {
             convSettings = chatManager.conversationModel.getConversationSettings(conversationIndex)
             nameField.text = convSettings.title || ""
@@ -22,114 +60,229 @@ FluContentDialog {
             markdownSwitch.checked = convSettings.markdownEnabled !== false
             historySwitch.checked = convSettings.historyToolEnabled !== false
 
-            var providers = ["OpenAI", "Claude", "Gemini", "DeepSeek", "Ollama"]
             var idx = providers.indexOf(convSettings.provider || "")
             providerCombo.currentIndex = idx >= 0 ? idx : 0
+
+            var agentIdx = agentIds.indexOf(convSettings.agentId || "")
+            agentCombo.currentIndex = agentIdx >= 0 ? agentIdx : 0
+
+            selectedSkillIds = convSettings.skillIds || []
+            selectedMcpServerIds = convSettings.mcpServerIds || []
+            if (selectedSkillIds.length === 0 && selectedMcpServerIds.length === 0 && convSettings.agentId) {
+                var agent = chatManager.agentById(convSettings.agentId)
+                selectedSkillIds = agent.skillIds || []
+                selectedMcpServerIds = agent.mcpServerIds || []
+            }
         }
     }
 
     onPositiveClicked: {
-        var providers = ["OpenAI", "Claude", "Gemini", "DeepSeek", "Ollama"]
+        var selectedAgentId = agentIds[agentCombo.currentIndex] || ""
+        var finalProvider = providers[providerCombo.currentIndex]
+        if (selectedAgentId !== "") {
+            var agent = chatManager.agentById(selectedAgentId)
+            if (agent && agent.provider) {
+                finalProvider = agent.provider
+            }
+        }
+
         chatManager.conversationModel.updateConversationSettings(conversationIndex, {
             "title": nameField.text,
-            "provider": providers[providerCombo.currentIndex],
+            "provider": finalProvider,
+            "agentId": selectedAgentId,
             "systemPrompt": systemPromptField.text,
             "temperature": tempSlider.value,
             "parameters": paramsField.text,
             "markdownEnabled": markdownSwitch.checked,
-            "historyToolEnabled": historySwitch.checked
+            "historyToolEnabled": historySwitch.checked,
+            "skillIds": selectedSkillIds,
+            "mcpServerIds": selectedMcpServerIds
         })
+
+        if (conversationIndex === chatManager.conversationModel.currentIndex) {
+            chatManager.setConversationAgentId(selectedAgentId)
+            chatManager.setConversationSkillIds(selectedSkillIds)
+            chatManager.setConversationMcpServerIds(selectedMcpServerIds)
+        }
         FluToast.success("Conversation settings saved")
     }
 
     contentDelegate: Component {
-        ColumnLayout {
-            width: 480
-            spacing: 16
+        ScrollView {
+            clip: true
+            implicitWidth: 540
+            implicitHeight: 680
 
-            // Name
             ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 4
-                FluText { text: "Name"; fontSize: FluTextStyle.BodyStrong }
-                FluTextBox {
-                    id: nameField
+                width: parent.width
+                spacing: 16
+
+                ColumnLayout {
                     Layout.fillWidth: true
-                    placeholderText: "Conversation name"
+                    spacing: 4
+                    FluText { text: "Name"; fontSize: FluTextStyle.BodyStrong }
+                    FluTextBox {
+                        id: nameField
+                        Layout.fillWidth: true
+                        placeholderText: "Conversation name"
+                    }
                 }
-            }
 
-            // LLM Provider
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 4
-                FluText { text: "LLM Provider"; fontSize: FluTextStyle.BodyStrong }
-                FluComboBox {
-                    id: providerCombo
+                ColumnLayout {
                     Layout.fillWidth: true
-                    model: ["OpenAI", "Claude", "Gemini", "DeepSeek", "Ollama"]
-                }
-            }
-
-            // System Prompt
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 4
-                FluText { text: "System Prompt"; fontSize: FluTextStyle.BodyStrong }
-                FluMultilineTextBox {
-                    id: systemPromptField
-                    Layout.fillWidth: true
-                    implicitHeight: 100
-                    placeholderText: "Override global system prompt for this conversation..."
-                }
-            }
-
-            // Temperature
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 4
-                RowLayout {
-                    Layout.fillWidth: true
-                    FluText { text: "Temperature"; fontSize: FluTextStyle.BodyStrong; Layout.fillWidth: true }
+                    spacing: 4
+                    FluText { text: "LLM Provider"; fontSize: FluTextStyle.BodyStrong }
+                    FluComboBox {
+                        id: providerCombo
+                        Layout.fillWidth: true
+                        model: providers
+                        enabled: agentCombo.currentIndex === 0
+                    }
                     FluText {
-                        text: tempSlider.value.toFixed(2)
-                        color: FluTheme.dark ? "#aaa" : "#666"
+                        visible: agentCombo.currentIndex > 0
+                        text: "Provider is controlled by selected agent"
+                        color: FluTheme.dark ? "#9ca3af" : "#6b7280"
                         fontSize: FluTextStyle.Caption
                     }
                 }
-                FluSlider {
-                    id: tempSlider
-                    Layout.fillWidth: true
-                    from: 0; to: 2; stepSize: 0.05
-                }
-            }
 
-            // Extra Parameters
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 4
-                FluText { text: "Extra Parameters (JSON)"; fontSize: FluTextStyle.BodyStrong }
-                FluMultilineTextBox {
-                    id: paramsField
+                ColumnLayout {
                     Layout.fillWidth: true
-                    implicitHeight: 60
-                    placeholderText: '{"top_p": 0.9}'
+                    spacing: 4
+                    FluText { text: "Agent"; fontSize: FluTextStyle.BodyStrong }
+                    FluComboBox {
+                        id: agentCombo
+                        Layout.fillWidth: true
+                        model: agentNames
+                        onCurrentIndexChanged: {
+                            var selectedAgentId = agentIds[currentIndex] || ""
+                            if (selectedAgentId === "")
+                                return
+                            var agent = chatManager.agentById(selectedAgentId)
+                            selectedSkillIds = agent.skillIds || selectedSkillIds
+                            selectedMcpServerIds = agent.mcpServerIds || selectedMcpServerIds
+                        }
+                    }
                 }
-            }
 
-            // Toggles
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 24
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+                    FluText { text: "Skills"; fontSize: FluTextStyle.BodyStrong }
+                    Rectangle {
+                        Layout.fillWidth: true
+                        radius: 8
+                        color: FluTheme.dark ? "#262626" : "#f5f5f5"
+                        border.width: 1
+                        border.color: FluTheme.dark ? "#333" : "#e5e7eb"
+                        implicitHeight: convSkillColumn.implicitHeight + 12
+
+                        Column {
+                            id: convSkillColumn
+                            anchors.fill: parent
+                            anchors.margins: 6
+                            spacing: 4
+                            Repeater {
+                                model: skillsData
+                                delegate: CheckBox {
+                                    text: (modelData && modelData.name) ? modelData.name : (modelData.id || "")
+                                    checked: selectedSkillIds.indexOf(modelData.id) >= 0
+                                    onToggled: {
+                                        selectedSkillIds = toggleId(selectedSkillIds, modelData.id, checked)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+                    FluText { text: "MCP Servers"; fontSize: FluTextStyle.BodyStrong }
+                    Rectangle {
+                        Layout.fillWidth: true
+                        radius: 8
+                        color: FluTheme.dark ? "#262626" : "#f5f5f5"
+                        border.width: 1
+                        border.color: FluTheme.dark ? "#333" : "#e5e7eb"
+                        implicitHeight: convMcpColumn.implicitHeight + 12
+
+                        Column {
+                            id: convMcpColumn
+                            anchors.fill: parent
+                            anchors.margins: 6
+                            spacing: 4
+                            Repeater {
+                                model: mcpData
+                                delegate: CheckBox {
+                                    text: (modelData && modelData.name) ? modelData.name : (modelData.id || "")
+                                    checked: selectedMcpServerIds.indexOf(modelData.id) >= 0
+                                    onToggled: {
+                                        selectedMcpServerIds = toggleId(selectedMcpServerIds, modelData.id, checked)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+                    FluText { text: "System Prompt"; fontSize: FluTextStyle.BodyStrong }
+                    FluMultilineTextBox {
+                        id: systemPromptField
+                        Layout.fillWidth: true
+                        implicitHeight: 100
+                        placeholderText: "Override global system prompt for this conversation..."
+                    }
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+                    RowLayout {
+                        Layout.fillWidth: true
+                        FluText { text: "Temperature"; fontSize: FluTextStyle.BodyStrong; Layout.fillWidth: true }
+                        FluText {
+                            text: tempSlider.value.toFixed(2)
+                            color: FluTheme.dark ? "#aaa" : "#666"
+                            fontSize: FluTextStyle.Caption
+                        }
+                    }
+                    FluSlider {
+                        id: tempSlider
+                        Layout.fillWidth: true
+                        from: 0; to: 2; stepSize: 0.05
+                    }
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+                    FluText { text: "Extra Parameters (JSON)"; fontSize: FluTextStyle.BodyStrong }
+                    FluMultilineTextBox {
+                        id: paramsField
+                        Layout.fillWidth: true
+                        implicitHeight: 60
+                        placeholderText: '{"top_p": 0.9}'
+                    }
+                }
 
                 RowLayout {
-                    FluText { text: "Markdown"; fontSize: FluTextStyle.Body }
-                    FluToggleSwitch { id: markdownSwitch; checked: true }
-                }
+                    Layout.fillWidth: true
+                    spacing: 24
 
-                RowLayout {
-                    FluText { text: "History Tool"; fontSize: FluTextStyle.Body }
-                    FluToggleSwitch { id: historySwitch; checked: true }
+                    RowLayout {
+                        FluText { text: "Markdown"; fontSize: FluTextStyle.Body }
+                        FluToggleSwitch { id: markdownSwitch; checked: true }
+                    }
+
+                    RowLayout {
+                        FluText { text: "History Tool"; fontSize: FluTextStyle.Body }
+                        FluToggleSwitch { id: historySwitch; checked: true }
+                    }
                 }
             }
         }
