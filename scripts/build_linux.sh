@@ -56,7 +56,7 @@ mkdir -p "$BUILD_DIR"
 
 cmake -B "$BUILD_DIR" -S . \
     -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
-    -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="$BUILD_DIR/bin" \
+    -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="bin" \
     $CMAKE_PREFIX
 
 cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" --parallel "$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"
