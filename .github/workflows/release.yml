@@ -198,7 +198,7 @@ jobs:
             exit 1
           fi
 
-          mkdir -p release appimage/AppDir/usr/bin
+          mkdir -p release appimage/AppDir/usr/bin appimage/tools
           cp "$BIN" appimage/AppDir/usr/bin/QChat
           chmod +x appimage/AppDir/usr/bin/QChat
 
@@ -214,18 +214,20 @@ jobs:
 
           rsvg-convert -w 256 -h 256 resources/icons/logo.svg -o appimage/qchat.png
 
-          wget -q -O appimage/linuxdeploy.AppImage https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-          wget -q -O appimage/linuxdeploy-plugin-qt.AppImage https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
-          chmod +x appimage/linuxdeploy.AppImage appimage/linuxdeploy-plugin-qt.AppImage
+          wget -q -O appimage/tools/linuxdeploy.AppImage https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget -q -O appimage/tools/linuxdeploy-plugin-qt.AppImage https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x appimage/tools/linuxdeploy.AppImage appimage/tools/linuxdeploy-plugin-qt.AppImage
+          ln -sf "$(pwd)/appimage/tools/linuxdeploy-plugin-qt.AppImage" appimage/tools/linuxdeploy-plugin-qt
 
           export APPIMAGE_EXTRACT_AND_RUN=1
           export VERSION
           export QMAKE="$QT_ROOT_DIR/bin/qmake"
+          export PATH="$(pwd)/appimage/tools:$PATH"
           pushd appimage
-          ./linuxdeploy.AppImage --appdir AppDir -e AppDir/usr/bin/QChat -d qchat.desktop -i qchat.png --plugin qt --output appimage
+          ./tools/linuxdeploy.AppImage --appdir AppDir -e AppDir/usr/bin/QChat -d qchat.desktop -i qchat.png --plugin qt --output appimage
           popd
 
-          APPIMAGE_FILE="$(find appimage -maxdepth 1 -type f -name '*.AppImage' | head -n 1)"
+          APPIMAGE_FILE="$(find appimage -maxdepth 1 -type f -name '*.AppImage' ! -name 'linuxdeploy*.AppImage' | head -n 1)"
           if [ -z "${APPIMAGE_FILE}" ]; then
             echo "AppImage was not generated" >&2
             exit 1
