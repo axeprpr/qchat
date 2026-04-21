@@ -139,7 +139,10 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${{ steps.version.outputs.app_version }}"
-          BIN="build/QChat"
+          BIN="build/bin/QChat"
+          if [ ! -f "$BIN" ] && [ -f "build/QChat" ]; then
+            BIN="build/QChat"
+          fi
           if [ ! -f "$BIN" ]; then
             echo "QChat binary not found at $BIN" >&2
             exit 1
@@ -162,7 +165,9 @@ jobs:
           VERSION="${{ steps.version.outputs.app_version }}"
           APP_PATH=""
 
-          if [ -d "build/QChat.app" ]; then
+          if [ -d "build/bin/QChat.app" ]; then
+            APP_PATH="build/bin/QChat.app"
+          elif [ -d "build/QChat.app" ]; then
             APP_PATH="build/QChat.app"
           elif [ -d "build/Release/QChat.app" ]; then
             APP_PATH="build/Release/QChat.app"
