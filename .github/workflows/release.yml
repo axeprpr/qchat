@@ -59,7 +59,7 @@ jobs:
 
       - name: Install Ninja (Windows)
         if: matrix.os == 'windows'
-        run: choco install ninja -y
+        run: choco install ninja nsis -y
 
       - name: Install Ninja (Linux)
         if: matrix.os == 'linux'
@@ -67,7 +67,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y ninja-build
+          sudo apt-get install -y ninja-build libfuse2 patchelf desktop-file-utils librsvg2-bin
 
       - name: Install Ninja (macOS)
         if: matrix.os == 'macos'
@@ -121,11 +121,39 @@ jobs:
           }
 
           New-Item -ItemType Directory -Path release -Force | Out-Null
-          $ZipName = "${{ matrix.package_name }}-v$Version.zip"
-          Compress-Archive -Path "$DeployDir/*" -DestinationPath "release/$ZipName" -Force
+          $ExeName = "${{ matrix.package_name }}-v$Version.exe"
+          $NsiScript = @'
+          Unicode true
+          Name "QChat"
+          OutFile "__OUTFILE__"
+          InstallDir "$LOCALAPPDATA\QChat"
+          RequestExecutionLevel user
+          Page directory
+          Page instfiles
+          UninstPage uninstConfirm
+          UninstPage instfiles
 
-          $Hash = (Get-FileHash "release/$ZipName" -Algorithm SHA256).Hash.ToLower()
-          "$Hash  $ZipName" | Out-File -FilePath "release/$ZipName.sha256.txt" -Encoding ascii
+          Section "Install"
+            SetOutPath "$INSTDIR"
+            File /r "build-win\deploy\*"
+            CreateShortcut "$DESKTOP\QChat.lnk" "$INSTDIR\QChat.exe"
+            WriteUninstaller "$INSTDIR\Uninstall.exe"
+          SectionEnd
+
+          Section "Uninstall"
+            Delete "$DESKTOP\QChat.lnk"
+            RMDir /r "$INSTDIR"
+          SectionEnd
+          '@
+          $NsiScript = $NsiScript.Replace("__OUTFILE__", "release\\$ExeName")
+          $NsiScript | Out-File -FilePath "release/installer.nsi" -Encoding ascii
+          & makensis.exe "release/installer.nsi"
+          if ($LASTEXITCODE -ne 0) {
+            throw "NSIS packaging failed"
+          }
+
+          $Hash = (Get-FileHash "release/$ExeName" -Algorithm SHA256).Hash.ToLower()
+          "$Hash  $ExeName" | Out-File -FilePath "release/$ExeName.sha256.txt" -Encoding ascii
 
       - name: Package Linux Artifact
         if: matrix.os == 'linux'
@@ -142,12 +170,42 @@ jobs:
             exit 1
           fi
 
-          mkdir -p release/stage
-          cp "$BIN" release/stage/QChat
-          chmod +x release/stage/QChat
+          mkdir -p release appimage/AppDir/usr/bin
+          cp "$BIN" appimage/AppDir/usr/bin/QChat
+          chmod +x appimage/AppDir/usr/bin/QChat
 
-          PKG="${{ matrix.package_name }}-v${VERSION}.tar.gz"
-          tar -czf "release/${PKG}" -C release/stage QChat
+          cat > appimage/qchat.desktop <<'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=QChat
+          Exec=QChat
+          Icon=qchat
+          Categories=Utility;
+          Terminal=false
+          EOF
+
+          rsvg-convert -w 256 -h 256 resources/icons/logo.svg -o appimage/qchat.png
+
+          wget -q -O appimage/linuxdeploy.AppImage https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget -q -O appimage/linuxdeploy-plugin-qt.AppImage https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x appimage/linuxdeploy.AppImage appimage/linuxdeploy-plugin-qt.AppImage
+
+          export APPIMAGE_EXTRACT_AND_RUN=1
+          export VERSION
+          export QMAKE="$QT_ROOT_DIR/bin/qmake"
+          pushd appimage
+          ./linuxdeploy.AppImage --appdir AppDir -e AppDir/usr/bin/QChat -d qchat.desktop -i qchat.png --plugin qt --output appimage
+          popd
+
+          APPIMAGE_FILE="$(find appimage -maxdepth 1 -type f -name '*.AppImage' | head -n 1)"
+          if [ -z "${APPIMAGE_FILE}" ]; then
+            echo "AppImage was not generated" >&2
+            exit 1
+          fi
+
+          PKG="${{ matrix.package_name }}-v${VERSION}.AppImage"
+          mv "${APPIMAGE_FILE}" "release/${PKG}"
+          chmod +x "release/${PKG}"
           HASH="$(sha256sum "release/${PKG}" | awk '{print tolower($1)}')"
           echo "${HASH}  ${PKG}" > "release/${PKG}.sha256.txt"
 
@@ -175,8 +233,12 @@ jobs:
           "$QT_ROOT_DIR/bin/macdeployqt" "$APP_PATH" -qmldir=src/qml
 
           mkdir -p release
-          PKG="${{ matrix.package_name }}-v${VERSION}.zip"
-          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "release/${PKG}"
+          STAGE_DIR="release/dmg-root"
+          rm -rf "${STAGE_DIR}"
+          mkdir -p "${STAGE_DIR}"
+          cp -R "$APP_PATH" "${STAGE_DIR}/QChat.app"
+          PKG="${{ matrix.package_name }}-v${VERSION}.dmg"
+          hdiutil create -volname "QChat" -srcfolder "${STAGE_DIR}" -ov -format UDZO "release/${PKG}"
           HASH="$(shasum -a 256 "release/${PKG}" | awk '{print tolower($1)}')"
           echo "${HASH}  ${PKG}" > "release/${PKG}.sha256.txt"
 
@@ -185,8 +247,9 @@ jobs:
         with:
           name: ${{ matrix.package_name }}-v${{ steps.version.outputs.app_version }}
           path: |
-            release/*.zip
-            release/*.tar.gz
+            release/*.exe
+            release/*.AppImage
+            release/*.dmg
             release/*.sha256.txt
           if-no-files-found: error
 

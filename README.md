@@ -89,9 +89,9 @@ Drag & drop files directly into the chat:
 Prebuilt packages are published automatically on each `v*` tag:
 
 - **GitHub Releases**: https://github.com/axeprpr/qchat/releases
-- Windows: `qchat-windows-x64-vX.Y.Z.zip`
-- Linux: `qchat-linux-x64-vX.Y.Z.tar.gz`
-- macOS (Universal): `qchat-macos-universal-vX.Y.Z.zip`
+- Windows: `qchat-windows-x64-vX.Y.Z.exe`
+- Linux: `qchat-linux-x64-vX.Y.Z.AppImage`
+- macOS (Universal): `qchat-macos-universal-vX.Y.Z.dmg`
 - Each artifact includes a matching `.sha256.txt` checksum file.
 
 If you don't find a package for your platform yet, build from source below.
