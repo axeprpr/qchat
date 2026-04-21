@@ -124,6 +124,8 @@ jobs:
           $ExeName = "${{ matrix.package_name }}-v$Version.exe"
           $DeployPath = (Resolve-Path $DeployDir).Path
           $DeployPathForNsis = $DeployPath.Replace('\', '\\')
+          $OutFilePath = (Resolve-Path "release").Path + "\\" + $ExeName
+          $OutFilePathForNsis = $OutFilePath.Replace('\', '\\')
           $NsiScript = @'
           Unicode true
           Name "QChat"
@@ -147,7 +149,7 @@ jobs:
             RMDir /r "$INSTDIR"
           SectionEnd
           '@
-          $NsiScript = $NsiScript.Replace("__OUTFILE__", "release\\$ExeName")
+          $NsiScript = $NsiScript.Replace("__OUTFILE__", $OutFilePathForNsis)
           $NsiScript = $NsiScript.Replace("__DEPLOY_PATH__", $DeployPathForNsis)
           $NsiScript | Out-File -FilePath "release/installer.nsi" -Encoding ascii
 
