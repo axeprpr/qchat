@@ -189,24 +189,38 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${{ steps.version.outputs.app_version }}"
-          BIN="build/bin/QChat"
-          if [ ! -f "$BIN" ] && [ -f "build/QChat" ]; then
-            BIN="build/QChat"
-          fi
-          if [ ! -f "$BIN" ]; then
-            echo "QChat binary not found at $BIN" >&2
+          BIN=""
+          for candidate in \
+            build/bin/qchat \
+            build/qchat \
+            build/Release/qchat \
+            build/bin/QChat \
+            build/QChat \
+            build/Release/QChat; do
+            if [ -f "${candidate}" ]; then
+              BIN="${candidate}"
+              break
+            fi
+          done
+          if [ -z "${BIN}" ]; then
+            echo "QChat binary not found in expected locations" >&2
+            ls -lah build || true
+            ls -lah build/bin || true
             exit 1
           fi
 
+          APP_BIN_NAME="$(basename "${BIN}")"
           mkdir -p release appimage/AppDir/usr/bin appimage/tools
-          cp "$BIN" appimage/AppDir/usr/bin/QChat
-          chmod +x appimage/AppDir/usr/bin/QChat
+          cp "${BIN}" "appimage/AppDir/usr/bin/${APP_BIN_NAME}"
+          chmod +x "appimage/AppDir/usr/bin/${APP_BIN_NAME}"
+          ln -sf "${APP_BIN_NAME}" appimage/AppDir/usr/bin/qchat
+          ln -sf "${APP_BIN_NAME}" appimage/AppDir/usr/bin/QChat
 
           cat > appimage/qchat.desktop <<'EOF'
           [Desktop Entry]
           Type=Application
           Name=QChat
-          Exec=QChat
+          Exec=qchat
           Icon=qchat
           Categories=Utility;
           Terminal=false
@@ -224,7 +238,7 @@ jobs:
           export QMAKE="$QT_ROOT_DIR/bin/qmake"
           export PATH="$(pwd)/appimage/tools:$PATH"
           pushd appimage
-          ./tools/linuxdeploy.AppImage --appdir AppDir -e AppDir/usr/bin/QChat -d qchat.desktop -i qchat.png --plugin qt --output appimage
+          ./tools/linuxdeploy.AppImage --appdir AppDir -e AppDir/usr/bin/qchat -d qchat.desktop -i qchat.png --plugin qt --output appimage
           popd
 
           APPIMAGE_FILE="$(find appimage -maxdepth 1 -type f -name '*.AppImage' ! -name 'linuxdeploy*.AppImage' | head -n 1)"
