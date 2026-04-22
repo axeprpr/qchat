@@ -209,12 +209,10 @@ jobs:
             exit 1
           fi
 
-          APP_BIN_NAME="$(basename "${BIN}")"
           mkdir -p release appimage/AppDir/usr/bin appimage/tools
-          cp "${BIN}" "appimage/AppDir/usr/bin/${APP_BIN_NAME}"
-          chmod +x "appimage/AppDir/usr/bin/${APP_BIN_NAME}"
-          ln -sf "${APP_BIN_NAME}" appimage/AppDir/usr/bin/qchat
-          ln -sf "${APP_BIN_NAME}" appimage/AppDir/usr/bin/QChat
+          cp "${BIN}" appimage/AppDir/usr/bin/qchat
+          chmod +x appimage/AppDir/usr/bin/qchat
+          ln -sf qchat appimage/AppDir/usr/bin/QChat
 
           cat > appimage/qchat.desktop <<'EOF'
           [Desktop Entry]
