@@ -37,7 +37,7 @@ FluPage {
 
             FluText {
                 text: chatPage.title
-                font: FluTextStyle.Subtitle
+                fontSize: FluTextStyle.Subtitle
                 Layout.fillWidth: true
                 elide: Text.ElideRight
             }
@@ -56,7 +56,7 @@ FluPage {
                     anchors.centerIn: parent
                     text: "Agent: " + currentAgentName
                     color: FluTheme.dark ? "#bfdbfe" : "#1d4ed8"
-                    font: FluTextStyle.Caption
+                    fontSize: FluTextStyle.Caption
                 }
             }
 
@@ -74,7 +74,7 @@ FluPage {
                     anchors.centerIn: parent
                     text: "Skills: " + currentSkills.length
                     color: FluTheme.dark ? "#bbf7d0" : "#166534"
-                    font: FluTextStyle.Caption
+                    fontSize: FluTextStyle.Caption
                 }
             }
 
@@ -92,7 +92,7 @@ FluPage {
                     anchors.centerIn: parent
                     text: "MCP: " + currentMcpServers.length
                     color: FluTheme.dark ? "#fde68a" : "#92400e"
-                    font: FluTextStyle.Caption
+                    fontSize: FluTextStyle.Caption
                 }
             }
 

@@ -35,11 +35,11 @@ FluScrollablePage {
                             ColumnLayout {
                                 spacing: 2
                                 Layout.fillWidth: true
-                                FluText { text: "Send Mode"; font: FluTextStyle.BodyStrong }
+                                FluText { text: "Send Mode"; fontSize: FluTextStyle.BodyStrong }
                                 FluText {
                                     text: "How to send messages"
                                     color: FluTheme.dark ? "#aaa" : "#666"
-                                    font: FluTextStyle.Caption
+                                    fontSize: FluTextStyle.Caption
                                 }
                             }
 
@@ -59,7 +59,7 @@ FluScrollablePage {
 
                         RowLayout {
                             anchors.fill: parent
-                            FluText { text: "Math Renderer"; font: FluTextStyle.BodyStrong; Layout.fillWidth: true }
+                            FluText { text: "Math Renderer"; fontSize: FluTextStyle.BodyStrong; Layout.fillWidth: true }
                             FluToggleSwitch {
                                 checked: chatManager.settings.mathRenderer
                                 onCheckedChanged: chatManager.settings.mathRenderer = checked
@@ -74,7 +74,7 @@ FluScrollablePage {
 
                         RowLayout {
                             anchors.fill: parent
-                            FluText { text: "Mermaid Diagrams"; font: FluTextStyle.BodyStrong; Layout.fillWidth: true }
+                            FluText { text: "Mermaid Diagrams"; fontSize: FluTextStyle.BodyStrong; Layout.fillWidth: true }
                             FluToggleSwitch {
                                 checked: chatManager.settings.mermaidEnabled
                                 onCheckedChanged: chatManager.settings.mermaidEnabled = checked
@@ -89,7 +89,7 @@ FluScrollablePage {
 
                         RowLayout {
                             anchors.fill: parent
-                            FluText { text: "Markdown Rendering"; font: FluTextStyle.BodyStrong; Layout.fillWidth: true }
+                            FluText { text: "Markdown Rendering"; fontSize: FluTextStyle.BodyStrong; Layout.fillWidth: true }
                             FluToggleSwitch {
                                 checked: chatManager.settings.markdownRendering
                                 onCheckedChanged: chatManager.settings.markdownRendering = checked
@@ -108,11 +108,11 @@ FluScrollablePage {
 
                             RowLayout {
                                 Layout.fillWidth: true
-                                FluText { text: "Temperature"; font: FluTextStyle.BodyStrong; Layout.fillWidth: true }
+                                FluText { text: "Temperature"; fontSize: FluTextStyle.BodyStrong; Layout.fillWidth: true }
                                 FluText {
                                     text: tempSlider.value.toFixed(2)
                                     color: FluTheme.dark ? "#aaa" : "#666"
-                                    font: FluTextStyle.Caption
+                                    fontSize: FluTextStyle.Caption
                                 }
                             }
 
@@ -138,11 +138,11 @@ FluScrollablePage {
                             ColumnLayout {
                                 spacing: 2
                                 Layout.fillWidth: true
-                                FluText { text: "History Message Count"; font: FluTextStyle.BodyStrong }
+                                FluText { text: "History Message Count"; fontSize: FluTextStyle.BodyStrong }
                                 FluText {
                                     text: "Number of past messages sent to the model"
                                     color: FluTheme.dark ? "#aaa" : "#666"
-                                    font: FluTextStyle.Caption
+                                    fontSize: FluTextStyle.Caption
                                 }
                             }
 

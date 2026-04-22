@@ -120,7 +120,7 @@ FluContentDialog {
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 4
-                    FluText { text: "Name"; font: FluTextStyle.BodyStrong }
+                    FluText { text: "Name"; fontSize: FluTextStyle.BodyStrong }
                     FluTextBox {
                         id: nameField
                         Layout.fillWidth: true
@@ -131,7 +131,7 @@ FluContentDialog {
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 4
-                    FluText { text: "LLM Provider"; font: FluTextStyle.BodyStrong }
+                    FluText { text: "LLM Provider"; fontSize: FluTextStyle.BodyStrong }
                     FluComboBox {
                         id: providerCombo
                         Layout.fillWidth: true
@@ -142,14 +142,14 @@ FluContentDialog {
                         visible: agentCombo.currentIndex > 0
                         text: "Provider is controlled by selected agent"
                         color: FluTheme.dark ? "#9ca3af" : "#6b7280"
-                        font: FluTextStyle.Caption
+                        fontSize: FluTextStyle.Caption
                     }
                 }
 
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 4
-                    FluText { text: "Agent"; font: FluTextStyle.BodyStrong }
+                    FluText { text: "Agent"; fontSize: FluTextStyle.BodyStrong }
                     FluComboBox {
                         id: agentCombo
                         Layout.fillWidth: true
@@ -168,7 +168,7 @@ FluContentDialog {
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 4
-                    FluText { text: "Skills"; font: FluTextStyle.BodyStrong }
+                    FluText { text: "Skills"; fontSize: FluTextStyle.BodyStrong }
                     Rectangle {
                         Layout.fillWidth: true
                         radius: 8
@@ -199,7 +199,7 @@ FluContentDialog {
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 4
-                    FluText { text: "MCP Servers"; font: FluTextStyle.BodyStrong }
+                    FluText { text: "MCP Servers"; fontSize: FluTextStyle.BodyStrong }
                     Rectangle {
                         Layout.fillWidth: true
                         radius: 8
@@ -230,7 +230,7 @@ FluContentDialog {
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 4
-                    FluText { text: "System Prompt"; font: FluTextStyle.BodyStrong }
+                    FluText { text: "System Prompt"; fontSize: FluTextStyle.BodyStrong }
                     FluMultilineTextBox {
                         id: systemPromptField
                         Layout.fillWidth: true
@@ -244,11 +244,11 @@ FluContentDialog {
                     spacing: 4
                     RowLayout {
                         Layout.fillWidth: true
-                        FluText { text: "Temperature"; font: FluTextStyle.BodyStrong; Layout.fillWidth: true }
+                        FluText { text: "Temperature"; fontSize: FluTextStyle.BodyStrong; Layout.fillWidth: true }
                         FluText {
                             text: tempSlider.value.toFixed(2)
                             color: FluTheme.dark ? "#aaa" : "#666"
-                            font: FluTextStyle.Caption
+                            fontSize: FluTextStyle.Caption
                         }
                     }
                     FluSlider {
@@ -261,7 +261,7 @@ FluContentDialog {
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 4
-                    FluText { text: "Extra Parameters (JSON)"; font: FluTextStyle.BodyStrong }
+                    FluText { text: "Extra Parameters (JSON)"; fontSize: FluTextStyle.BodyStrong }
                     FluMultilineTextBox {
                         id: paramsField
                         Layout.fillWidth: true
@@ -275,12 +275,12 @@ FluContentDialog {
                     spacing: 24
 
                     RowLayout {
-                        FluText { text: "Markdown"; font: FluTextStyle.Body }
+                        FluText { text: "Markdown"; fontSize: FluTextStyle.Body }
                         FluToggleSwitch { id: markdownSwitch; checked: true }
                     }
 
                     RowLayout {
-                        FluText { text: "History Tool"; font: FluTextStyle.Body }
+                        FluText { text: "History Tool"; fontSize: FluTextStyle.Body }
                         FluToggleSwitch { id: historySwitch; checked: true }
                     }
                 }

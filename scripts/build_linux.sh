@@ -40,11 +40,16 @@ fi
 if [ ! -f "third_party/FluentUI/CMakeLists.txt" ]; then
     echo ""
     echo "Downloading FluentUI..."
-    FLUENTUI_REF="${FLUENTUI_REF:-1.7.7}"
+    FLUENTUI_REF="${FLUENTUI_REF:-7e33a2f672d18239ef49ab960075b1137a1d18e7}"
     echo "Using FluentUI ref: ${FLUENTUI_REF}"
-    git clone --depth 1 --branch "${FLUENTUI_REF}" https://github.com/zhuzichu520/FluentUI.git third_party/FluentUI || {
+    git clone https://github.com/zhuzichu520/FluentUI.git third_party/FluentUI || {
         echo "[WARNING] FluentUI download failed. Building without FluentUI."
     }
+    if [ -d "third_party/FluentUI/.git" ]; then
+        git -C third_party/FluentUI checkout "${FLUENTUI_REF}" || {
+            echo "[WARNING] Failed to checkout FluentUI ref ${FLUENTUI_REF}. Using repository default branch."
+        }
+    fi
 fi
 
 # Build

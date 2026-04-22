@@ -79,11 +79,18 @@ REM ---- Check FluentUI ----
 if not exist "third_party\FluentUI\CMakeLists.txt" (
     echo.
     echo Downloading FluentUI...
-    if "%FLUENTUI_REF%"=="" set FLUENTUI_REF=1.7.7
+    if "%FLUENTUI_REF%"=="" set FLUENTUI_REF=7e33a2f672d18239ef49ab960075b1137a1d18e7
     echo Using FluentUI ref: %FLUENTUI_REF%
-    git clone --depth 1 --branch %FLUENTUI_REF% https://github.com/zhuzichu520/FluentUI.git third_party\FluentUI
+    git clone https://github.com/zhuzichu520/FluentUI.git third_party\FluentUI
     if errorlevel 1 (
         echo [WARNING] FluentUI download failed. Building without FluentUI.
+    ) else (
+        pushd third_party\FluentUI
+        git checkout %FLUENTUI_REF%
+        if errorlevel 1 (
+            echo [WARNING] Failed to checkout FluentUI ref %FLUENTUI_REF%. Using repository default branch.
+        )
+        popd
     )
 )
 

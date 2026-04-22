@@ -40,7 +40,7 @@ FluScrollablePage {
             FluText {
                 Layout.alignment: Qt.AlignHCenter
                 text: statusText
-                font: FluTextStyle.Subtitle
+                fontSize: FluTextStyle.Subtitle
             }
         }
 
@@ -130,7 +130,7 @@ FluScrollablePage {
             Layout.alignment: Qt.AlignHCenter
             text: "Configure your OpenAI API key in Settings to enable voice features."
             color: FluTheme.dark ? "#888" : "#999"
-            font: FluTextStyle.Caption
+            fontSize: FluTextStyle.Caption
             wrapMode: Text.Wrap
             horizontalAlignment: Text.AlignHCenter
         }

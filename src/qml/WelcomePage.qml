@@ -28,14 +28,14 @@ FluPage {
             FluText {
                 Layout.alignment: Qt.AlignHCenter
                 text: "Welcome to QChat"
-                font: FluTextStyle.Title
+                fontSize: FluTextStyle.Title
             }
 
             FluText {
                 Layout.alignment: Qt.AlignHCenter
                 text: "A powerful AI chat client with FluentUI design"
                 color: FluTheme.dark ? "#aaa" : "#666"
-                font: FluTextStyle.Body
+                fontSize: FluTextStyle.Body
             }
         }
 
@@ -71,12 +71,12 @@ FluPage {
                             spacing: 2
                             FluText {
                                 text: modelData.title
-                                font: FluTextStyle.BodyStrong
+                                fontSize: FluTextStyle.BodyStrong
                             }
                             FluText {
                                 text: modelData.desc
                                 color: FluTheme.dark ? "#aaa" : "#666"
-                                font: FluTextStyle.Caption
+                                fontSize: FluTextStyle.Caption
                                 wrapMode: Text.Wrap
                                 Layout.fillWidth: true
                             }

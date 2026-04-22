@@ -91,7 +91,7 @@ FluContentDialog {
                                 Layout.fillWidth: true
                                 FluText {
                                     text: model.title
-                                    font: FluTextStyle.Body
+                                    fontSize: FluTextStyle.Body
                                     font.bold: true
                                     Layout.fillWidth: true
                                     elide: Text.ElideRight
@@ -105,7 +105,7 @@ FluContentDialog {
                                         id: categoryLabel
                                         anchors.centerIn: parent
                                         text: model.category
-                                        font: FluTextStyle.Caption
+                                        fontSize: FluTextStyle.Caption
                                         color: FluTheme.dark ? "#93c5fd" : "#1d4ed8"
                                     }
                                 }
@@ -113,7 +113,7 @@ FluContentDialog {
 
                             FluText {
                                 text: model.content
-                                font: FluTextStyle.Caption
+                                fontSize: FluTextStyle.Caption
                                 color: FluTheme.dark ? "#888" : "#666"
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight

@@ -24,7 +24,7 @@ FluContentDialog {
             FluText {
                 text: "Configure rendering and parsing tools"
                 color: FluTheme.dark ? "#aaa" : "#666"
-                font: FluTextStyle.Caption
+                fontSize: FluTextStyle.Caption
                 wrapMode: Text.Wrap
                 Layout.fillWidth: true
             }
@@ -42,11 +42,11 @@ FluContentDialog {
                         ColumnLayout {
                             spacing: 2
                             Layout.fillWidth: true
-                            FluText { text: "Markdown Rendering"; font: FluTextStyle.BodyStrong }
+                            FluText { text: "Markdown Rendering"; fontSize: FluTextStyle.BodyStrong }
                             FluText {
                                 text: "Render assistant messages as formatted markdown"
                                 color: FluTheme.dark ? "#aaa" : "#666"
-                                font: FluTextStyle.Caption
+                                fontSize: FluTextStyle.Caption
                             }
                         }
                         FluToggleSwitch {
@@ -62,11 +62,11 @@ FluContentDialog {
                         ColumnLayout {
                             spacing: 2
                             Layout.fillWidth: true
-                            FluText { text: "Math Renderer"; font: FluTextStyle.BodyStrong }
+                            FluText { text: "Math Renderer"; fontSize: FluTextStyle.BodyStrong }
                             FluText {
                                 text: "Render LaTeX math expressions"
                                 color: FluTheme.dark ? "#aaa" : "#666"
-                                font: FluTextStyle.Caption
+                                fontSize: FluTextStyle.Caption
                             }
                         }
                         FluToggleSwitch {
@@ -82,11 +82,11 @@ FluContentDialog {
                         ColumnLayout {
                             spacing: 2
                             Layout.fillWidth: true
-                            FluText { text: "Mermaid Diagrams"; font: FluTextStyle.BodyStrong }
+                            FluText { text: "Mermaid Diagrams"; fontSize: FluTextStyle.BodyStrong }
                             FluText {
                                 text: "Render Mermaid diagram code blocks"
                                 color: FluTheme.dark ? "#aaa" : "#666"
-                                font: FluTextStyle.Caption
+                                fontSize: FluTextStyle.Caption
                             }
                         }
                         FluToggleSwitch {

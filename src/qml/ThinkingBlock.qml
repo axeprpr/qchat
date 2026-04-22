@@ -47,7 +47,7 @@ Rectangle {
             FluText {
                 text: isActive ? "Thinking..." : "Thought process"
                 color: FluTheme.dark ? "#7090d0" : "#4060c0"
-                font: FluTextStyle.Caption
+                fontSize: FluTextStyle.Caption
                 Layout.fillWidth: true
             }
 
@@ -63,7 +63,7 @@ Rectangle {
             Layout.fillWidth: true
             text: content
             color: FluTheme.dark ? "#8090a8" : "#506080"
-            font: FluTextStyle.Caption
+            fontSize: FluTextStyle.Caption
             wrapMode: Text.Wrap
             visible: expanded && content.length > 0
         }
