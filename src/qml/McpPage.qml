@@ -109,7 +109,7 @@ FluPage {
                     Layout.fillWidth: true
                     FluText {
                         text: "MCP List"
-                        fontSize: FluTextStyle.Subtitle
+                        font: FluTextStyle.Subtitle
                         Layout.fillWidth: true
                     }
                     FluIconButton {
@@ -152,7 +152,7 @@ FluPage {
                             FluText {
                                 text: modelData.transport || ""
                                 color: FluTheme.dark ? "#9ca3af" : "#6b7280"
-                                fontSize: FluTextStyle.Caption
+                                font: FluTextStyle.Caption
                             }
                         }
 
@@ -183,7 +183,7 @@ FluPage {
 
                     FluText {
                         text: "MCP Config"
-                        fontSize: FluTextStyle.Subtitle
+                        font: FluTextStyle.Subtitle
                     }
 
                     FluText {
@@ -191,7 +191,7 @@ FluPage {
                         visible: false
                         text: "Readonly MCP: delete is disabled"
                         color: FluTheme.dark ? "#f59e0b" : "#b45309"
-                        fontSize: FluTextStyle.Caption
+                        font: FluTextStyle.Caption
                     }
 
                     FluTextBox {

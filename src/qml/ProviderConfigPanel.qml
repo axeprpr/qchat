@@ -47,7 +47,7 @@ FluExpander {
             spacing: 4
             FluText {
                 text: isDify ? "API Key" : (isDeerFlow ? "Auth Token (Optional)" : "API Key")
-                fontSize: FluTextStyle.BodyStrong
+                font: FluTextStyle.BodyStrong
             }
             FluPasswordBox {
                 id: apiKeyField
@@ -62,7 +62,7 @@ FluExpander {
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 4
-            FluText { text: "Base URL"; fontSize: FluTextStyle.BodyStrong }
+            FluText { text: "Base URL"; font: FluTextStyle.BodyStrong }
             FluTextBox {
                 id: baseUrlField
                 Layout.fillWidth: true
@@ -77,7 +77,7 @@ FluExpander {
             Layout.fillWidth: true
             spacing: 4
             visible: isDify
-            FluText { text: "User ID (Optional)"; fontSize: FluTextStyle.BodyStrong }
+            FluText { text: "User ID (Optional)"; font: FluTextStyle.BodyStrong }
             FluTextBox {
                 id: difyUserIdField
                 Layout.fillWidth: true
@@ -90,7 +90,7 @@ FluExpander {
             Layout.fillWidth: true
             spacing: 4
             visible: isDeerFlow
-            FluText { text: "Assistant ID"; fontSize: FluTextStyle.BodyStrong }
+            FluText { text: "Assistant ID"; font: FluTextStyle.BodyStrong }
             FluTextBox {
                 id: deerAssistantIdField
                 Layout.fillWidth: true
@@ -103,7 +103,7 @@ FluExpander {
             Layout.fillWidth: true
             spacing: 4
             visible: isDeerFlow
-            FluText { text: "Mode (Optional)"; fontSize: FluTextStyle.BodyStrong }
+            FluText { text: "Mode (Optional)"; font: FluTextStyle.BodyStrong }
             FluTextBox {
                 id: deerModeField
                 Layout.fillWidth: true
@@ -116,7 +116,7 @@ FluExpander {
             Layout.fillWidth: true
             spacing: 4
             visible: isDeerFlow
-            FluText { text: "Model Name (Optional)"; fontSize: FluTextStyle.BodyStrong }
+            FluText { text: "Model Name (Optional)"; font: FluTextStyle.BodyStrong }
             FluTextBox {
                 id: deerModelNameField
                 Layout.fillWidth: true
@@ -129,7 +129,7 @@ FluExpander {
             Layout.fillWidth: true
             spacing: 4
             visible: isDeerFlow
-            FluText { text: "Agent Name (Optional)"; fontSize: FluTextStyle.BodyStrong }
+            FluText { text: "Agent Name (Optional)"; font: FluTextStyle.BodyStrong }
             FluTextBox {
                 id: deerAgentNameField
                 Layout.fillWidth: true
@@ -142,7 +142,7 @@ FluExpander {
             Layout.fillWidth: true
             spacing: 4
             visible: isDeerFlow
-            FluText { text: "Auth Token Override (Optional)"; fontSize: FluTextStyle.BodyStrong }
+            FluText { text: "Auth Token Override (Optional)"; font: FluTextStyle.BodyStrong }
             FluPasswordBox {
                 id: deerAuthTokenField
                 Layout.fillWidth: true
@@ -155,7 +155,7 @@ FluExpander {
             Layout.fillWidth: true
             spacing: 4
             visible: !isExternal
-            FluText { text: "Default Model"; fontSize: FluTextStyle.BodyStrong }
+            FluText { text: "Default Model"; font: FluTextStyle.BodyStrong }
             FluTextBox {
                 id: modelField
                 Layout.fillWidth: true

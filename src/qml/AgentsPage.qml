@@ -146,7 +146,7 @@ FluPage {
                     Layout.fillWidth: true
                     FluText {
                         text: "Agent List"
-                        fontSize: FluTextStyle.Subtitle
+                        font: FluTextStyle.Subtitle
                         Layout.fillWidth: true
                     }
                     FluIconButton {
@@ -189,7 +189,7 @@ FluPage {
                             FluText {
                                 text: modelData.provider || ""
                                 color: FluTheme.dark ? "#9ca3af" : "#6b7280"
-                                fontSize: FluTextStyle.Caption
+                                font: FluTextStyle.Caption
                             }
                         }
 
@@ -220,7 +220,7 @@ FluPage {
 
                     FluText {
                         text: "Agent Config"
-                        fontSize: FluTextStyle.Subtitle
+                        font: FluTextStyle.Subtitle
                     }
 
                     FluText {
@@ -228,7 +228,7 @@ FluPage {
                         visible: false
                         text: "Builtin agent: delete is disabled"
                         color: FluTheme.dark ? "#f59e0b" : "#b45309"
-                        fontSize: FluTextStyle.Caption
+                        font: FluTextStyle.Caption
                     }
 
                     FluTextBox {
@@ -318,7 +318,7 @@ FluPage {
                         spacing: 4
                         FluText {
                             text: "Default Skills"
-                            fontSize: FluTextStyle.BodyStrong
+                            font: FluTextStyle.BodyStrong
                         }
                         Rectangle {
                             Layout.fillWidth: true
@@ -352,7 +352,7 @@ FluPage {
                         spacing: 4
                         FluText {
                             text: "Default MCP Servers"
-                            fontSize: FluTextStyle.BodyStrong
+                            font: FluTextStyle.BodyStrong
                         }
                         Rectangle {
                             Layout.fillWidth: true

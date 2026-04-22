@@ -125,7 +125,7 @@ FluContentDialog {
                     spacing: 4
                     FluText {
                         text: "Title"
-                        fontSize: FluTextStyle.BodyStrong
+                        font: FluTextStyle.BodyStrong
                     }
                     FluTextBox {
                         id: titleField
@@ -139,7 +139,7 @@ FluContentDialog {
                     spacing: 4
                     FluText {
                         text: "Agent"
-                        fontSize: FluTextStyle.BodyStrong
+                        font: FluTextStyle.BodyStrong
                     }
                     FluComboBox {
                         id: agentCombo
@@ -166,7 +166,7 @@ FluContentDialog {
                     spacing: 4
                     FluText {
                         text: "Provider"
-                        fontSize: FluTextStyle.BodyStrong
+                        font: FluTextStyle.BodyStrong
                     }
                     FluComboBox {
                         id: providerCombo
@@ -190,7 +190,7 @@ FluContentDialog {
                         visible: selectedAgentId !== ""
                         text: "Provider is controlled by selected agent"
                         color: FluTheme.dark ? "#9ca3af" : "#6b7280"
-                        fontSize: FluTextStyle.Caption
+                        font: FluTextStyle.Caption
                     }
                 }
 
@@ -200,7 +200,7 @@ FluContentDialog {
                     FluText {
                         text: "New Agent Session"
                         Layout.fillWidth: true
-                        fontSize: FluTextStyle.Body
+                        font: FluTextStyle.Body
                     }
                     FluToggleSwitch {
                         id: agentSessionSwitch
@@ -213,7 +213,7 @@ FluContentDialog {
                     spacing: 4
                     FluText {
                         text: "Skills"
-                        fontSize: FluTextStyle.BodyStrong
+                        font: FluTextStyle.BodyStrong
                     }
                     Rectangle {
                         Layout.fillWidth: true
@@ -247,7 +247,7 @@ FluContentDialog {
                     spacing: 4
                     FluText {
                         text: "MCP Servers"
-                        fontSize: FluTextStyle.BodyStrong
+                        font: FluTextStyle.BodyStrong
                     }
                     Rectangle {
                         Layout.fillWidth: true
