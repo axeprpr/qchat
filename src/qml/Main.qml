@@ -35,10 +35,6 @@ FluWindow {
 
         title: "QChat"
 
-        Component.onCompleted: {
-            nav.setCurrentIndex(0)
-        }
-
         items: FluObject {
             FluPaneItem {
                 id: newChatItem
