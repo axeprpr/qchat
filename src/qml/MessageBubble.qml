@@ -27,7 +27,7 @@ Item {
             Layout.alignment: isUser ? Qt.AlignRight : Qt.AlignLeft
             text: isUser ? "You" : "Assistant"
             color: FluTheme.dark ? "#aaa" : "#666"
-            fontSize: FluTextStyle.Caption
+            font: FluTextStyle.Caption
         }
 
         // Thinking block

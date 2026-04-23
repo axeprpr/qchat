@@ -15,7 +15,7 @@ FluScrollablePage {
         // Header
         FluText {
             text: "DALL-E 3 Image Generation"
-            fontSize: FluTextStyle.Title
+            font: FluTextStyle.Title
         }
 
         // Prompt input
@@ -29,7 +29,7 @@ FluScrollablePage {
 
                 FluText {
                     text: "Prompt"
-                    fontSize: FluTextStyle.BodyStrong
+                    font: FluTextStyle.BodyStrong
                 }
 
                 FluMultilineTextBox {
@@ -46,7 +46,7 @@ FluScrollablePage {
 
                     ColumnLayout {
                         spacing: 4
-                        FluText { text: "Size"; fontSize: FluTextStyle.Caption }
+                        FluText { text: "Size"; font: FluTextStyle.Caption }
                         FluComboBox {
                             id: sizeCombo
                             model: ["1024x1024", "1792x1024", "1024x1792"]
@@ -56,7 +56,7 @@ FluScrollablePage {
 
                     ColumnLayout {
                         spacing: 4
-                        FluText { text: "Quality"; fontSize: FluTextStyle.Caption }
+                        FluText { text: "Quality"; font: FluTextStyle.Caption }
                         FluComboBox {
                             id: qualityCombo
                             model: ["standard", "hd"]
@@ -66,7 +66,7 @@ FluScrollablePage {
 
                     ColumnLayout {
                         spacing: 4
-                        FluText { text: "Style"; fontSize: FluTextStyle.Caption }
+                        FluText { text: "Style"; font: FluTextStyle.Caption }
                         FluComboBox {
                             id: styleCombo
                             model: ["vivid", "natural"]
@@ -133,14 +133,14 @@ FluScrollablePage {
 
                     FluText {
                         text: "Revised Prompt"
-                        fontSize: FluTextStyle.BodyStrong
+                        font: FluTextStyle.BodyStrong
                     }
                     FluText {
                         id: revisedPromptText
                         Layout.fillWidth: true
                         wrapMode: Text.WordWrap
                         color: FluTheme.dark ? "#aaa" : "#555"
-                        fontSize: FluTextStyle.Caption
+                        font: FluTextStyle.Caption
                     }
                 }
 
@@ -210,7 +210,7 @@ FluScrollablePage {
         // History section
         FluText {
             text: "Recent Generations"
-            fontSize: FluTextStyle.BodyStrong
+            font: FluTextStyle.BodyStrong
             visible: historyModel.count > 0
         }
 

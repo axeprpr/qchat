@@ -92,7 +92,7 @@ FluPage {
                     Layout.fillWidth: true
                     FluText {
                         text: "Skill List"
-                        fontSize: FluTextStyle.Subtitle
+                        font: FluTextStyle.Subtitle
                         Layout.fillWidth: true
                     }
                     FluIconButton {
@@ -161,7 +161,7 @@ FluPage {
 
                     FluText {
                         text: "Skill Config"
-                        fontSize: FluTextStyle.Subtitle
+                        font: FluTextStyle.Subtitle
                     }
 
                     FluText {
@@ -169,7 +169,7 @@ FluPage {
                         visible: false
                         text: "Builtin skill: delete is disabled"
                         color: FluTheme.dark ? "#f59e0b" : "#b45309"
-                        fontSize: FluTextStyle.Caption
+                        font: FluTextStyle.Caption
                     }
 
                     FluTextBox {

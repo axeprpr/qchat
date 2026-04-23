@@ -127,7 +127,7 @@ Rectangle {
                         anchors.centerIn: parent
                         text: model.name
                         visible: !model.isImage
-                        fontSize: FluTextStyle.Caption
+                        font: FluTextStyle.Caption
                     }
 
                     // Remove button
